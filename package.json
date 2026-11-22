@@ -1,0 +1,10 @@
+{
+  "name": "cartesian-billiards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bank and kick shot calculator using one Cartesian diamond system.",
+  "scripts": {
+    "test": "node tests/solver.test.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
