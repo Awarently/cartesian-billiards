@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartesian Billiards</title>
+<meta name="theme-color" content="#14110e">
+<meta name="description" content="Bank and kick shot calculator using one Cartesian diamond system.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Billiards">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="bar">
+    <div class="brand">
+      <span class="brand-name">Cartesian Billiards</span>
+      <span class="brand-tag">Every position has a number.</span>
+    </div>
+    <span class="badge" id="model-badge">Ideal geometry</span>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg id="table" role="img" aria-label="Billiards table. Drag a ball to move it. Tap a pocket to select it.">
+      <g id="g-static"></g>
+      <g id="g-dyn"></g>
+    </svg>
+    <div class="hud" id="hud" hidden></div>
+  </main>
+
+  <section class="panel" id="panel" aria-label="Shot solution">
+    <div class="quick">
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Shot type">
+          <button type="button" id="mode-bank" aria-pressed="true">Bank</button>
+          <button type="button" id="mode-kick" aria-pressed="false">Kick</button>
+        </div>
+        <div class="rails" role="group" aria-label="Cushion">
+          <button type="button" class="rail" id="rail-auto" data-rail="auto">Auto</button>
+          <button type="button" class="rail" id="rail-T" data-rail="T" aria-label="Top rail">T</button>
+          <button type="button" class="rail" id="rail-B" data-rail="B" aria-label="Bottom rail">B</button>
+          <button type="button" class="rail" id="rail-L" data-rail="L" aria-label="Left rail">L</button>
+          <button type="button" class="rail" id="rail-R" data-rail="R" aria-label="Right rail">R</button>
+        </div>
+        <button type="button" class="chip" id="kick-pocket" aria-pressed="false" hidden>Pocket the ball</button>
+      </div>
+
+      <div class="route" id="route" aria-live="polite"></div>
+      <div class="subrow">
+        <span class="sub" id="sub"></span>
+        <span class="status" id="status"></span>
+      </div>
+
+      <button type="button" class="more-toggle" id="more-toggle" aria-expanded="false" aria-controls="more">
+        <span id="more-label">Show numbers and options</span>
+      </button>
+    </div>
+
+    <div class="more" id="more">
+      <p class="instruction" id="instruction"></p>
+      <h2>Numbers</h2>
+      <dl class="facts" id="facts"></dl>
+
+      <h2>Ball positions</h2>
+      <div class="positions">
+        <div class="pos">
+          <span class="pos-name"><i class="swatch" id="cue-swatch"></i>Cue ball</span>
+          <label for="cue-x">X</label><input id="cue-x" type="number" inputmode="decimal" min="0" max="8" step="0.05">
+          <label for="cue-y">Y</label><input id="cue-y" type="number" inputmode="decimal" min="0" max="4" step="0.05">
+        </div>
+        <div class="pos">
+          <span class="pos-name"><i class="swatch" id="obj-swatch"></i><span id="obj-name">Ball 1</span></span>
+          <label for="obj-x">X</label><input id="obj-x" type="number" inputmode="decimal" min="0" max="8" step="0.05">
+          <label for="obj-y">Y</label><input id="obj-y" type="number" inputmode="decimal" min="0" max="4" step="0.05">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="act-undo">Undo</button>
+        <button type="button" id="act-redo">Redo</button>
+        <button type="button" id="act-add">Add ball</button>
+        <button type="button" id="act-remove">Remove ball</button>
+        <button type="button" id="act-reset">Reset table</button>
+      </div>
+
+      <h2>Display</h2>
+      <div class="options">
+        <label class="opt"><input type="checkbox" id="opt-grid"><span>Grid</span></label>
+        <label class="opt"><input type="checkbox" id="opt-numbers"><span>Diamond numbers</span></label>
+        <label class="opt"><input type="checkbox" id="opt-ghost"><span>Ghost ball</span></label>
+        <label class="opt"><input type="checkbox" id="opt-path"><span>Trajectory</span></label>
+        <label class="opt"><input type="checkbox" id="opt-ball"><span>Real ball size</span></label>
+        <button type="button" class="opt-btn" id="opt-rotate">Rotate table</button>
+        <label class="opt-select" for="opt-table"><span>Table</span>
+          <select id="opt-table">
+            <option value="7">7 ft (78 x 39 in)</option>
+            <option value="8">8 ft (88 x 44 in)</option>
+            <option value="9">9 ft (100 x 50 in)</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="note" id="note">
+        Ideal geometry. The solver uses equal-angle reflection with no spin, speed, throw, or cushion compression.
+        A real table plays shorter or longer than these numbers. Use them as a starting reference, then adjust.
+      </p>
+    </div>
+  </section>
+</div>
+
+<script src="solver.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
+  }
+</script>
+</body>
+</html>
