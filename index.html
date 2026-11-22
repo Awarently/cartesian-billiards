@@ -123,6 +123,11 @@
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    /* When a new version installs, reload once so the new files show at once. */
+    var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (hadController && !reloaded) { reloaded = true; location.reload(); }
+    });
     navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
   }
 </script>
