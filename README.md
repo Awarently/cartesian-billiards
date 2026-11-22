@@ -4,7 +4,7 @@ Every position has a number. Every shot has a solution.
 
 A bank and kick shot calculator for pool. Place the balls, tap a pocket, and the app gives the cushion aim point as one number, for example `T4.64` (top rail, 4.64 diamonds from the left corner).
 
-Phase 1 of the product spec: one-rail bank, one-rail kick, kick to pocket, ghost ball, cut angle, obstruction check. Installable on iPhone, iPad and Android. Works offline after the first load.
+Bank, kick and kick-to-pocket shots off 1, 2 or 3 cushions, with every valid route listed and ranked. Ghost ball, cut angle, obstruction check. Installable on iPhone, iPad and Android. Works offline after the first load.
 
 ## User guide
 
@@ -33,7 +33,7 @@ Rotating the table on screen changes only the drawing. All numbers stay in table
 
 ## How the solver works
 
-Mirror (unfolding) method. To bank off a rail, reflect the pocket across the rail and draw a straight line from the ball to the image. Where that line crosses the rail is the contact. More rails: reflect across each rail in reverse order. The engine (`solvePath`) supports any cushion sequence; the interface uses one rail.
+Mirror (unfolding) method. To bank off a rail, reflect the pocket across the rail and draw a straight line from the ball to the image. Where that line crosses the rail is the contact. More rails: reflect across each rail in reverse order. The engine (`solvePath`) supports any cushion sequence; the interface offers 1, 2 or 3 cushions and checks every sequence (4, 12 and 36 of them).
 
 With real ball size on, the reflection line moves in by one ball radius (the ball centre turns there, not at the cushion nose). Each contact has three values:
 
@@ -49,7 +49,7 @@ Point-ball mode (uncheck *Real ball size*) reproduces the spec reference test: b
 - Diamonds are treated as on the cushion nose line. Real diamonds sit on the rail top, behind the nose.
 - Table sizes use playing-surface dimensions: 7 ft 78 x 39 in, 8 ft 88 x 44 in, 9 ft 100 x 50 in. Ball 2.25 in.
 - Pocket jaw and mouth sizes are approximations (corner jaw 3.4 in, side half-mouth 2.7 in). They set which routes are rejected near pockets. Change them in `tableConfig()` in `solver.js`.
-- "Auto" picks the valid rail with the lowest heuristic score (travel distance plus cut angle). It is not a make probability.
+- "Auto" picks the valid route with the lowest heuristic score: travel distance + 1.5 per extra cushion + a cut penalty that rises steeply past 30° + 1 per warning. Classes: under 9 Easy, under 13 Moderate, under 17 Difficult, else Advanced. It is not a make probability.
 - Layout and settings are saved in the browser on each device. They do not sync.
 
 ## Files

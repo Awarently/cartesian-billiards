@@ -45,15 +45,16 @@
           <button type="button" id="mode-bank" aria-pressed="true">Bank</button>
           <button type="button" id="mode-kick" aria-pressed="false">Kick</button>
         </div>
-        <div class="rails" role="group" aria-label="Cushion">
-          <button type="button" class="rail" id="rail-auto" data-rail="auto">Auto</button>
-          <button type="button" class="rail" id="rail-T" data-rail="T" aria-label="Top rail">T</button>
-          <button type="button" class="rail" id="rail-B" data-rail="B" aria-label="Bottom rail">B</button>
-          <button type="button" class="rail" id="rail-L" data-rail="L" aria-label="Left rail">L</button>
-          <button type="button" class="rail" id="rail-R" data-rail="R" aria-label="Right rail">R</button>
+        <div class="cushions" role="group" aria-label="Number of cushions">
+          <span class="cush-label" aria-hidden="true">Cushions</span>
+          <button type="button" class="cush" id="cush-1" data-n="1" aria-label="1 cushion">1<span class="cnt" id="cnt-1"></span></button>
+          <button type="button" class="cush" id="cush-2" data-n="2" aria-label="2 cushions">2<span class="cnt" id="cnt-2"></span></button>
+          <button type="button" class="cush" id="cush-3" data-n="3" aria-label="3 cushions">3<span class="cnt" id="cnt-3"></span></button>
         </div>
         <button type="button" class="chip" id="kick-pocket" aria-pressed="false" hidden>Pocket the ball</button>
       </div>
+
+      <div class="routes" id="routes" role="group" aria-label="Routes"></div>
 
       <div class="route" id="route" aria-live="polite"></div>
       <div class="subrow">

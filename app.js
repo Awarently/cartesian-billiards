@@ -18,7 +18,7 @@
 
   function defaults() {
     return {
-      mode: 'bank', kickPocket: false, rail: 'auto', pocket: 'BR', target: 'o1',
+      mode: 'bank', kickPocket: false, railCount: 1, route: null, pocket: 'BR', target: 'o1',
       balls: [
         { id: 'cue', type: 'cue', x: 1, y: 0.5 },
         { id: 'o1', type: 'object', n: 1, x: 2, y: 1 }
@@ -31,7 +31,7 @@
   var state = defaults();
   var cfg = CB.tableConfig(state.table);
   var view = null, vbW = 0, vbH = 0;
-  var current = null, byRail = {}, autoPick = null;
+  var current = null, sols = [], validSols = [], counts = {}, autoPick = null;
   var drag = null, frame = 0;
   var undoStack = [], redoStack = [], saved = '';
 
@@ -46,13 +46,13 @@
   }
   function layoutSnap() {
     return JSON.stringify({
-      mode: state.mode, kickPocket: state.kickPocket, rail: state.rail,
+      mode: state.mode, kickPocket: state.kickPocket, railCount: state.railCount, route: state.route,
       pocket: state.pocket, target: state.target, balls: state.balls
     });
   }
   function applySnap(json) {
     var s = JSON.parse(json);
-    state.mode = s.mode; state.kickPocket = s.kickPocket; state.rail = s.rail;
+    state.mode = s.mode; state.kickPocket = s.kickPocket; state.railCount = s.railCount || 1; state.route = s.route || null;
     state.pocket = s.pocket; state.target = s.target; state.balls = s.balls;
   }
   function persist() {
@@ -91,7 +91,10 @@
     try {
       out.mode = s.mode === 'kick' ? 'kick' : 'bank';
       out.kickPocket = !!s.kickPocket;
-      out.rail = ['auto', 'T', 'B', 'L', 'R'].indexOf(s.rail) >= 0 ? s.rail : 'auto';
+      out.railCount = [1, 2, 3].indexOf(s.railCount) >= 0 ? s.railCount : 1;
+      if (typeof s.route === 'string' && /^[TBLR]{1,3}$/.test(s.route) && s.route.length === out.railCount) out.route = s.route;
+      else if (!s.railCount && ['T', 'B', 'L', 'R'].indexOf(s.rail) >= 0) out.route = s.rail; /* v1 layout */
+      else out.route = null;
       out.pocket = CB.pocketById(s.pocket) ? s.pocket : 'BR';
       out.table = CB.TABLE_SIZES[s.table] ? s.table : '9';
       out.pointMode = !!s.pointMode;
@@ -125,11 +128,19 @@
       others: state.balls.filter(function (b) { return b.type === 'object' && b.id !== obj.id; })
     };
     if (state.mode === 'bank' || state.kickPocket) req.pocket = CB.pocketById(state.pocket);
-    var all = CB.solveAll(state.mode, req, 1);
-    byRail = {};
-    all.forEach(function (s) { byRail[s.railSequence[0]] = s; });
-    autoPick = all[0].valid ? all[0] : null;
-    current = state.rail === 'auto' ? autoPick : byRail[state.rail];
+    counts = {};
+    for (var n = 1; n <= 3; n++) {
+      var all = CB.solveAll(state.mode, req, n);
+      counts[n] = all.filter(function (s) { return s.valid; }).length;
+      if (n === state.railCount) sols = all;
+    }
+    validSols = sols.filter(function (s) { return s.valid; });
+    autoPick = validSols[0] || null;
+    current = autoPick;
+    if (state.route) {
+      var m = sols.filter(function (s) { return s.railSequence.join('') === state.route; })[0];
+      if (m) current = m;
+    }
   }
 
   /* ---------- drawing helpers ---------- */
@@ -308,6 +319,15 @@
   /* ---------- panel ---------- */
 
   function pocketName(p) { return p.name + ' pocket'; }
+  function railNames(seq) {
+    var names = seq.map(function (r) { return CB.RAILS[r].name; });
+    return names.length === 1 ? 'the ' + names[0] + ' rail' : 'the ' + names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] + ' rails';
+  }
+  function otherCounts() {
+    var n = state.railCount, others = [1, 2, 3].filter(function (k) { return k !== n && counts[k]; });
+    if (!others.length) return 'No route with 1 to 3 cushions. Move a ball or select another pocket.';
+    return 'Try ' + others.map(function (k) { return k + (k > 1 ? ' cushions' : ' cushion') + ' (' + counts[k] + (counts[k] === 1 ? ' route' : ' routes') + ')'; }).join(' or ') + '.';
+  }
   function pt(p) { return '(' + CB.fmt(p.x) + ', ' + CB.fmt(p.y) + ')'; }
   function sentence(list) { return list.map(function (s) { return s + '.'; }).join(' '); }
   function cutText(c) { return c.side === 'straight' ? 'Straight, no cut' : Math.round(c.deg) + '° ' + c.side; }
@@ -324,14 +344,27 @@
     $('kick-pocket').hidden = state.mode !== 'kick';
     $('kick-pocket').setAttribute('aria-pressed', state.kickPocket);
 
-    ['auto', 'T', 'B', 'L', 'R'].forEach(function (id) {
-      var el = $('rail-' + id), s = byRail[id];
-      el.setAttribute('aria-pressed', state.rail === id);
-      el.classList.toggle('ok', !!(s && s.valid));
-      el.classList.toggle('bad', !!(s && !s.valid));
-      el.classList.toggle('chosen', state.rail === 'auto' && autoPick && autoPick.railSequence[0] === id);
-      if (s) el.title = s.valid ? CB.RAILS[id].name + ' rail: ' + s.cushionContacts[0].label : CB.RAILS[id].name + ' rail: ' + s.errors[0];
+    var nCush = state.railCount;
+    [1, 2, 3].forEach(function (n) {
+      $('cush-' + n).setAttribute('aria-pressed', n === nCush);
+      var cnt = $('cnt-' + n);
+      cnt.textContent = counts[n];
+      cnt.classList.toggle('zero', !counts[n]);
+      $('cush-' + n).setAttribute('aria-label', n + (n > 1 ? ' cushions, ' : ' cushion, ') + counts[n] + (counts[n] === 1 ? ' route' : ' routes'));
     });
+
+    var rh = ['<button type="button" class="route-chip auto" data-route="" aria-pressed="' + !state.route + '">Auto</button>'];
+    validSols.forEach(function (s, k) {
+      var seq = s.railSequence.join('');
+      rh.push('<button type="button" class="route-chip' + (k === 0 ? ' best' : '') + '" data-route="' + seq + '" aria-pressed="' + (state.route === seq) + '">' +
+        s.cushionContacts.map(function (c) { return c.label; }).join(' \u203a ') + '<span class="lvl">' + s.difficulty + '</span></button>');
+    });
+    if (state.route && current && !current.valid) {
+      rh.push('<button type="button" class="route-chip bad" data-route="' + state.route + '" aria-pressed="true">' +
+        state.route.split('').join(' \u203a ') + '<span class="lvl">No route</span></button>');
+    }
+    if (!validSols.length) rh.push('<span class="routes-empty">' + esc(otherCounts()) + '</span>');
+    $('routes').innerHTML = rh.join('');
 
     /* route line */
     var route = $('route'), status = $('status'), instr = $('instruction'), sub = $('sub'), sep = '<span class="sep">→</span>';
@@ -342,9 +375,9 @@
       parts.push('<span>' + endName + '</span>');
       route.innerHTML = parts.join(sep);
     } else if (sol) {
-      route.innerHTML = '<span class="none">' + CB.RAILS[sol.railSequence[0]].id + ' rail</span>' + sep + '<span class="none">no route</span>';
+      route.innerHTML = '<span class="none">' + sol.railSequence.join(' \u203a ') + '</span>' + sep + '<span class="none">no route</span>';
     } else {
-      route.innerHTML = '<span class="none">No one-rail route</span>';
+      route.innerHTML = '<span class="none">No ' + nCush + '-cushion route</span>';
     }
 
     if (sol && sol.valid) {
@@ -359,42 +392,48 @@
     /* instruction and one-line summary */
     sub.className = 'sub';
     if (sol && sol.valid) {
-      var c = sol.cushionContacts[0], rail = CB.RAILS[c.rail].name, where = '<b>' + c.label + '</b> (' + CB.describeCoord(c.aimCoord) + ')';
+      var cs = sol.cushionContacts, c0 = cs[0];
+      var first = 'the ' + CB.RAILS[c0.rail].name + ' rail at <b>' + c0.label + '</b> (' + CB.describeCoord(c0.aimCoord) + ')';
+      var then = cs.length > 1 ? ' It then hits ' + cs.slice(1).map(function (c) { return '<b>' + c.label + '</b>'; }).join(' and then ') + '.' : '';
+      var cutWords = cutText(sol.cutAngle).toLowerCase();
       if (state.mode === 'bank') {
-        instr.innerHTML = 'Send ' + bl + ' to the ' + rail + ' rail at ' + where + '. Aim the cue ball at the ghost ball, ' +
-          pt(sol.ghostBallPosition) + '. Cut: ' + cutText(sol.cutAngle).toLowerCase() + '.';
-        sub.textContent = 'Ghost ball ' + pt(sol.ghostBallPosition) + ' \u00b7 cut ' + cutText(sol.cutAngle).toLowerCase();
+        instr.innerHTML = 'Send ' + bl + ' to ' + first + '.' + then + ' Aim the cue ball at the ghost ball, ' +
+          pt(sol.ghostBallPosition) + '. Cut: ' + cutWords + '.';
+        sub.textContent = sol.difficulty + ' \u00b7 ghost ball ' + pt(sol.ghostBallPosition) + ' \u00b7 cut ' + cutWords;
       } else if (state.kickPocket) {
-        instr.innerHTML = 'Shoot the cue ball to the ' + rail + ' rail at ' + where + '. It arrives at the ghost ball and sends ' + bl +
-          ' to the ' + pocketName(pocket).toLowerCase() + '. Cut: ' + cutText(sol.cutAngle).toLowerCase() + '.';
-        sub.textContent = 'Ghost ball ' + pt(sol.ghostBallPosition) + ' \u00b7 cut ' + cutText(sol.cutAngle).toLowerCase();
+        instr.innerHTML = 'Shoot the cue ball to ' + first + '.' + then + ' It arrives at the ghost ball and sends ' + bl +
+          ' to the ' + pocketName(pocket).toLowerCase() + '. Cut: ' + cutWords + '.';
+        sub.textContent = sol.difficulty + ' \u00b7 ghost ball ' + pt(sol.ghostBallPosition) + ' \u00b7 cut ' + cutWords;
       } else {
-        instr.innerHTML = 'Shoot the cue ball to the ' + rail + ' rail at ' + where + '. It meets ' + bl + ' full after one cushion.';
-        sub.textContent = 'Full hit on ' + bl + ' \u00b7 cue travel ' + CB.fmt(sol.cueDistance) + ' diamonds';
+        instr.innerHTML = 'Shoot the cue ball to ' + first + '.' + then + ' It meets ' + bl + ' full after ' +
+          (cs.length === 1 ? 'one cushion.' : cs.length + ' cushions.');
+        sub.textContent = sol.difficulty + ' \u00b7 full hit \u00b7 cue travel ' + CB.fmt(sol.cueDistance) + ' diamonds';
       }
       if (sol.warnings.length) { instr.innerHTML += ' ' + esc(sentence(sol.warnings)); sub.textContent = sol.warnings[0]; }
     } else if (sol) {
-      instr.textContent = 'No route off the ' + CB.RAILS[sol.railSequence[0]].name + ' rail. ' + sentence(sol.errors);
+      instr.textContent = 'No route off ' + railNames(sol.railSequence) + '. ' + sentence(sol.errors);
       sub.textContent = sol.errors[0]; sub.className = 'sub bad';
     } else {
-      instr.textContent = 'No one-rail ' + (state.mode === 'bank' ? 'bank' : 'kick') + ' works from here. Select a rail to see the reason, select another pocket, or move a ball.';
-      sub.textContent = 'Select a rail to see the reason, or move a ball.';
+      instr.textContent = 'No ' + nCush + '-cushion ' + (state.mode === 'bank' ? 'bank' : 'kick') + ' works from here. ' + otherCounts();
+      sub.textContent = otherCounts();
     }
 
     /* facts */
     var f = [];
     function row(k, v, cls) { f.push('<dt>' + k + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd>'); }
-    row('Shot', 'One-rail ' + (state.mode === 'bank' ? 'bank' : state.kickPocket ? 'kick to pocket' : 'kick'), 'plain');
+    row('Shot', ['One', 'Two', 'Three'][nCush - 1] + '-cushion ' + (state.mode === 'bank' ? 'bank' : state.kickPocket ? 'kick to pocket' : 'kick'), 'plain');
     row('Cue ball', pt(ball('cue')));
     row(bname, pt(obj));
     row('Target', usesPocket ? esc(pocketName(pocket)) + ' ' + pt(pocket) : bname + ', full hit', 'plain');
     if (sol && sol.cushionContacts.length) {
-      var cc = sol.cushionContacts[0];
-      row('Aim point', '<span class="mk">' + cc.label + '</span>');
-      if (!state.pointMode) row('Ball contact', cc.contactLabel + ', centre ' + pt(cc.center));
+      sol.cushionContacts.forEach(function (cc, k) {
+        row(sol.cushionContacts.length > 1 ? 'Cushion ' + (k + 1) : 'Aim point',
+          '<span class="mk">' + cc.label + '</span>' + (state.pointMode ? '' : ' \u00b7 ball contact ' + cc.contactLabel));
+      });
       if (sol.ghostBallPosition) row('Ghost ball', pt(sol.ghostBallPosition));
       if (sol.cutAngle && (state.mode === 'bank' || state.kickPocket)) row('Cut angle', cutText(sol.cutAngle));
       if (sol.valid) {
+        row('Difficulty', sol.difficulty + ' (heuristic score ' + CB.fmt(sol.difficultyScore, 1) + ', not a make percentage)', 'plain');
         row('Cue travel', distText(sol.cueDistance));
         if (sol.objectDistance) row(bname + ' travel', distText(sol.objectDistance));
       }
@@ -402,9 +441,16 @@
     if (sol) {
       sol.errors.forEach(function (e) { row('Problem', esc(e), 'bad'); });
       sol.warnings.forEach(function (w) { row('Caution', esc(w), 'warn'); });
-    } else {
-      CB.RAIL_IDS.forEach(function (id) { row(CB.RAILS[id].id + ' rail', esc(byRail[id].errors[0]), 'bad'); });
     }
+    row('Routes found', [1, 2, 3].map(function (n) { return n + (n > 1 ? ' cushions: ' : ' cushion: ') + counts[n]; }).join(' \u00b7 '), 'plain');
+    var rejected = sols.filter(function (s) { return !s.valid && s !== sol; });
+    var shown = nCush === 1 ? rejected : rejected.filter(function (s) { return s.cushionContacts.length; });
+    shown.slice(0, 6).forEach(function (s) {
+      var name = s.cushionContacts.length ? s.cushionContacts.map(function (c) { return c.label; }).join(' \u203a ') : s.railSequence.join(' \u203a ');
+      row('Not ' + name, esc(s.errors[0]), 'bad');
+    });
+    var hidden = rejected.length - Math.min(shown.length, 6);
+    if (hidden > 0) row('Others', hidden + ' more not possible. The last cushion holds the pocket, or the path misses a cushion.', 'plain');
     row('Model', 'Ideal geometry, ' + (state.pointMode ? 'point ball' : cfg.ballDiameter + ' in ball on ' + cfg.name + ' table'), 'plain');
     $('facts').innerHTML = f.join('');
 
@@ -481,6 +527,7 @@
     CB.POCKETS.forEach(function (p) { var d = CB.dist(p, t.p); if (d < pd) { pd = d; pk = p; } });
     if (pk) {
       state.pocket = pk.id;
+      state.route = null;
       if (state.mode === 'kick') state.kickPocket = true;
       commit();
     }
@@ -508,11 +555,17 @@
 
   /* ---------- controls ---------- */
 
-  $('mode-bank').addEventListener('click', function () { state.mode = 'bank'; commit(); });
-  $('mode-kick').addEventListener('click', function () { state.mode = 'kick'; commit(); });
+  $('mode-bank').addEventListener('click', function () { state.mode = 'bank'; state.route = null; commit(); });
+  $('mode-kick').addEventListener('click', function () { state.mode = 'kick'; state.route = null; commit(); });
   $('kick-pocket').addEventListener('click', function () { state.kickPocket = !state.kickPocket; commit(); });
-  ['auto', 'T', 'B', 'L', 'R'].forEach(function (id) {
-    $('rail-' + id).addEventListener('click', function () { state.rail = id; commit(); });
+  [1, 2, 3].forEach(function (n) {
+    $('cush-' + n).addEventListener('click', function () { state.railCount = n; state.route = null; commit(); });
+  });
+  $('routes').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-route]');
+    if (!b) return;
+    state.route = b.getAttribute('data-route') || null;
+    commit();
   });
 
   $('more-toggle').addEventListener('click', function () {
@@ -569,7 +622,7 @@
   });
   $('act-reset').addEventListener('click', function () {
     var d = defaults();
-    state.mode = d.mode; state.kickPocket = d.kickPocket; state.rail = d.rail;
+    state.mode = d.mode; state.kickPocket = d.kickPocket; state.railCount = d.railCount; state.route = null;
     state.pocket = d.pocket; state.target = d.target; state.balls = d.balls;
     commit();
   });

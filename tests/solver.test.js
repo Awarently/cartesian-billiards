@@ -169,6 +169,39 @@ test('kick to pocket aims at the ghost ball, not the object-ball centre', () => 
   assert.ok(s.valid, s.errors.join('; '));
 });
 
+console.log('Multi-cushion banks');
+test('user layout: no 1-cushion route, 3-cushion T6.01 > R2.27 > B4.90 to top-left', () => {
+  const req = { cue: cue(1, 0.5), object: obj(3.64, 2.15), pocket: P('TL'), cfg };
+  assert.strictEqual(CB.solveAll('bank', req, 1).filter(s => s.valid).length, 0);
+  const three = CB.solveAll('bank', req, 3).filter(s => s.valid);
+  const trb = three.find(s => s.railSequence.join('') === 'TRB');
+  assert.ok(trb, 'TRB route missing');
+  assert.deepStrictEqual(trb.cushionContacts.map(c => c.label), ['T6.01', 'R2.27', 'B4.90']);
+  assert.ok(trb.cutAngle.deg < 10);
+  assert.ok(['Easy', 'Moderate', 'Difficult', 'Advanced'].includes(trb.difficulty));
+});
+test('valid routes are sorted easiest first', () => {
+  const req = { cue: cue(1, 0.5), object: obj(3.64, 2.15), pocket: P('TL'), cfg };
+  const v = CB.solveAll('bank', req, 2).concat(CB.solveAll('bank', req, 3)).filter(s => s.valid);
+  for (const n of [2, 3]) {
+    const list = CB.solveAll('bank', req, n).filter(s => s.valid).map(s => s.difficultyScore);
+    for (let i = 1; i < list.length; i++) assert.ok(list[i] >= list[i - 1]);
+  }
+  assert.ok(v.length >= 2);
+});
+test('difficulty classes follow the score thresholds', () => {
+  assert.strictEqual(CB.difficulty(5), 'Easy');
+  assert.strictEqual(CB.difficulty(10), 'Moderate');
+  assert.strictEqual(CB.difficulty(15), 'Difficult');
+  assert.strictEqual(CB.difficulty(25), 'Advanced');
+});
+test('two-cushion kick contacts cushions in the requested order', () => {
+  const s = CB.solveKick({ cue: cue(1, 1), object: obj(6, 1), rails: ['T', 'B'], cfg, pointMode: true });
+  assert.ok(s.valid, s.errors.join('; '));
+  assert.deepStrictEqual(s.cushionContacts.map(c => c.rail), ['T', 'B']);
+  assert.ok(s.cushionContacts[0].center.x < s.cushionContacts[1].center.x);
+});
+
 console.log('Coordinates');
 test('view rotation round-trips and keeps table coordinates', () => {
   ['h', 'v'].forEach(o => {

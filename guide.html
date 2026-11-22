@@ -272,13 +272,14 @@ td:first-child { white-space: nowrap; }
     <li><b>Drag the white cue ball</b> to its position. While you drag, the app shows the exact X and Y. To type an exact position, open <i>Show numbers and options</i> and use <i>Ball positions</i>.</li>
     <li><b>Drag the object ball</b> (yellow) to its position.</li>
     <li><b>Tap the pocket</b> you want. The selected pocket has a yellow ring.</li>
-    <li><b>Select a cushion</b>, or leave it on <span class="key on">Auto</span>. Auto selects the easiest cushion that works.</li>
-    <li><b>Read the aim point</b> in the cyan box on the cushion and in large type under the table, for example <code>T4.64 → Bottom-right pocket</code>.</li>
+    <li><b>Select how many cushions:</b> <span class="key">1</span>, <span class="key">2</span> or <span class="key">3</span>. The small number on each button tells how many routes work with that many cushions. A grey <b>0</b> means none.</li>
+    <li><b>Select a route</b>, or leave it on <span class="key on">Auto</span>. Auto shows the easiest route. The routes that work are listed next to Auto, easiest first. Swipe the list sideways to see all of them.</li>
+    <li><b>Read the aim point</b> in the cyan box on the cushion and in large type under the table, for example <code>T4.64 → Bottom-right pocket</code>. With 2 or 3 cushions there is one cyan box for each cushion, in order: <code>T6.01 → R2.27 → B4.90 → Top-left pocket</code>. Aim at the <b>first</b> number. The others show where the ball must go next, so you can check the path.</li>
     <li><b>Shoot.</b> Hit the object ball so it travels to the aim point. To do that, aim the cue ball at the <b>ghost ball</b>: the dashed white circle that touches the object ball.</li>
   </ol>
 
   <figure>
-    <svg viewBox="0 0 1000 600" role="img" aria-label="Example bank shot. Cue ball at 1, 0.5. Object ball at 2, 1. Object ball goes to the top rail at T4.64, then to the bottom-right pocket. Ghost ball shown next to the object ball.">
+    <svg viewBox="0 0 1000 600" role="img" aria-label="Example one-cushion bank shot. Cue ball at 1, 0.5. Object ball at 2, 1. Object ball goes to the top rail at T4.64, then to the bottom-right pocket. Ghost ball shown next to the object ball.">
       <rect x="62" y="62" width="876" height="456" rx="20" fill="var(--wood)"/>
       <rect x="80" y="80" width="840" height="420" fill="var(--cloth)"/>
       <g fill="#0a0806">
@@ -339,11 +340,22 @@ td:first-child { white-space: nowrap; }
     <li><span class="pill bad">No route</span> The geometry does not work. The reason is shown, for example <i>The ball meets the bottom rail before the pocket</i>.</li>
   </ul>
 
-  <h3>Cushion buttons</h3>
+  <h3>Cushion count and route list</h3>
   <ul>
-    <li><span class="key ul">T</span> A cyan bar under a letter means a shot off that cushion works.</li>
-    <li><span class="key st">B</span> A crossed-out letter means no shot off that cushion works. Select it to see why.</li>
-    <li><span class="key on">Auto</span> The app selects the easiest cushion that works and outlines it.</li>
+    <li><span class="key">2</span> with a cyan number, for example <b>3</b>: three different 2-cushion routes work. A grey <b>0</b>: none work.</li>
+    <li><span class="key on">Auto</span> Shows the easiest route. The easiest route in the list has a cyan outline.</li>
+    <li>Each route in the list shows its cushion numbers and a difficulty: <b>Easy</b>, <b>Moderate</b>, <b>Difficult</b> or <b>Advanced</b>. Tap a route to show it. It stays selected while you move balls, and turns red if it stops working.</li>
+    <li>If no route works with the selected count, the list tells you which count to try, for example <i>Try 3 cushions (1 route)</i>.</li>
+  </ul>
+  <p>The difficulty is an estimate from the distance the balls roll, the number of cushions, and how thin the cut is. It is not a percentage chance of making the shot.</p>
+
+  <h3>Why a route is not listed</h3>
+  <p>Open <i>Show numbers and options</i>. Under <i>Numbers</i>, each route that does not work is listed with its reason. Common reasons:</p>
+  <ul>
+    <li><i>The top-left pocket is on the top rail</i>: the last cushion cannot be one of the rails that forms the target pocket.</li>
+    <li><i>The cue ball cannot reach the contact side of the object ball</i>: the object ball would have to go back toward the cue ball. The cut is 90° or more.</li>
+    <li><i>The ball meets the top rail before the pocket</i>: the ball comes in too flat along a rail and hits the cushion short of the pocket. The app's pocket sizes are estimates, so on a real table some of these still go in.</li>
+    <li><i>The contact is inside a pocket opening</i>: the ball would go into a different pocket on the way.</li>
   </ul>
 
   <h3>The numbers panel</h3>
@@ -351,8 +363,11 @@ td:first-child { white-space: nowrap; }
   <div class="table-wrap">
     <table>
       <tbody>
-        <tr><td>Aim point</td><td>Where to send the ball on the cushion. This is the number to use.</td></tr>
+        <tr><td>Aim point, or Cushion 1, 2, 3</td><td>Where to send the ball on each cushion, in order. Aim at the first one.</td></tr>
         <tr><td>Ball contact</td><td>Where the side of the ball touches the cushion. It is a little different from the aim point because the ball has width.</td></tr>
+        <tr><td>Difficulty</td><td>Easy, Moderate, Difficult or Advanced. An estimate only.</td></tr>
+        <tr><td>Routes found</td><td>How many routes work with 1, 2 and 3 cushions.</td></tr>
+        <tr><td>Not …</td><td>Routes that do not work, and why.</td></tr>
         <tr><td>Ghost ball</td><td>Position of the cue-ball centre at contact.</td></tr>
         <tr><td>Cut angle</td><td>Angle between the cue-ball line and the object-ball line. <i>Left</i> or <i>right</i> is the side the object ball goes to, from the shooter's view.</td></tr>
         <tr><td>Travel</td><td>Distance each ball rolls, in diamonds and inches.</td></tr>
@@ -366,8 +381,8 @@ td:first-child { white-space: nowrap; }
   <ol class="steps">
     <li><b>Select <span class="key on">Kick</span>.</b></li>
     <li><b>Place the cue ball and the object ball.</b></li>
-    <li><b>Select a cushion</b>, or leave it on <span class="key on">Auto</span>.</li>
-    <li><b>Read the aim point.</b> This is where the <b>cue ball</b> must hit the cushion. The app aims for a full hit on the object ball.</li>
+    <li><b>Select 1, 2 or 3 cushions</b>, and a route, or leave it on <span class="key on">Auto</span>.</li>
+    <li><b>Read the aim point.</b> This is where the <b>cue ball</b> must hit the first cushion. The app aims for a full hit on the object ball.</li>
     <li><b>To also make the ball,</b> select <i>Pocket the ball</i>, then tap a pocket. The app then aims the cue ball at the ghost ball, so it hits the object ball on the correct side to send it to that pocket.</li>
   </ol>
 

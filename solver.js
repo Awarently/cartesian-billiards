@@ -374,9 +374,11 @@
     var cb = firstBlocker(req.cue, ghost, others, r, [req.object.id]);
     if (cb) { fail(sol, 'The cue-ball path is blocked by ' + ballName(cb)); sol.blockers.push(cb.id); }
 
-    if (firstBlocker(path.points[0], path.points[1], [req.cue], r, []) ||
-        (path.points.length > 2 && firstBlocker(path.points[1], path.points[2], [req.cue], r, []))) {
-      sol.warnings.push('The object ball returns through the cue-ball position. Double kiss is possible');
+    for (var k = 1; k < path.points.length; k++) {
+      if (firstBlocker(path.points[k - 1], path.points[k], [req.cue], r, [])) {
+        sol.warnings.push('The object ball passes through the cue-ball position. Double kiss is possible');
+        break;
+      }
     }
 
     sol.objectDistance = pathLength(path.points);
@@ -453,12 +455,21 @@
 
   /* ---------- ranking (heuristic, not a make probability) ---------- */
 
+  /*
+   * Heuristic difficulty. Lower is easier. Units are roughly "diamonds of
+   * travel": each extra cushion adds 1.5, cuts above 30 degrees add steeply,
+   * each warning adds 1. Not a probability of making the shot.
+   */
   function score(sol) {
     var cut = sol.cutAngle ? sol.cutAngle.deg : 0;
-    return sol.travelDistance + cut / 20 + sol.warnings.length * 0.5 + sol.railSequence.length;
+    var cutCost = cut <= 30 ? cut / 30 : 1 + (cut - 30) / 12;
+    return sol.travelDistance + 1.5 * (sol.railSequence.length - 1) + cutCost + sol.warnings.length;
+  }
+  function difficulty(s) {
+    return s < 9 ? 'Easy' : s < 13 ? 'Moderate' : s < 17 ? 'Difficult' : 'Advanced';
   }
 
-  /* Solve every cushion sequence of the given length. Valid routes first. */
+  /* Solve every cushion sequence of the given length. Valid routes first, easiest first. */
   function solveAll(type, req, railCount) {
     var seqs = enumerateSequences(railCount || 1);
     var sols = seqs.map(function (seq) {
@@ -466,6 +477,7 @@
       r.rails = seq;
       var s = type === 'bank' ? solveBank(r) : solveKick(r);
       s.difficultyScore = s.valid ? score(s) : null;
+      s.difficulty = s.valid ? difficulty(s.difficultyScore) : null;
       return s;
     });
     sols.sort(function (a, b) {
@@ -493,7 +505,7 @@
     pointSegment: pointSegment, firstBlocker: firstBlocker,
     pocketAtContact: pocketAtContact, pocketApproach: pocketApproach,
     ghostBall: ghostBall, cutAngle: cutAngle,
-    solveBank: solveBank, solveKick: solveKick, solveAll: solveAll,
+    solveBank: solveBank, solveKick: solveKick, solveAll: solveAll, score: score, difficulty: difficulty,
     describeCoord: describeCoord, fmt: fmt, dist: dist, unit: unit, sub: sub, add: add, mul: mul
   };
 });
