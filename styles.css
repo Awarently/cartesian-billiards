@@ -67,6 +67,13 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   padding: 3px 9px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted);
 }
 
+.bar-right { display: flex; align-items: center; gap: 8px; flex: none; }
+.guide-link {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 6px;
+  background: var(--raise); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
+  font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
 /* ---------- table ---------- */
 .stage { position: relative; min-height: 0; min-width: 0; padding: 2px 8px 6px; }
 #table {
@@ -224,7 +231,8 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .bar { padding: 6px 16px 2px; }
   .brand-tag { display: none; }
   .brand-name { font-size: 17px; letter-spacing: 0.06em; }
-  .badge { font-size: 11px; padding: 2px 7px; }
+  .badge { display: none; }
+  .guide-link { min-height: 32px; font-size: 14px; }
   .quick { padding-top: 8px; gap: 6px; }
   .controls { gap: 6px; flex-wrap: nowrap; }
   .route { font-size: 25px; }

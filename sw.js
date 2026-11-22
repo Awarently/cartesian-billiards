@@ -3,10 +3,11 @@
  * Change VERSION whenever any cached file changes, so phones pick up the update.
  * Strategy: serve from cache, update the cache in the background (stale-while-revalidate).
  */
-var VERSION = 'cb-v1';
+var VERSION = 'cb-v2';
 var FILES = [
   './',
   'index.html',
+  'guide.html',
   'styles.css',
   'fonts.css',
   'solver.js',

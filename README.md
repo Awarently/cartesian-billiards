@@ -6,6 +6,10 @@ A bank and kick shot calculator for pool. Place the balls, tap a pocket, and the
 
 Phase 1 of the product spec: one-rail bank, one-rail kick, kick to pocket, ghost ball, cut angle, obstruction check. Installable on iPhone, iPad and Android. Works offline after the first load.
 
+## User guide
+
+The step-by-step guide, including how the numbers work, is inside the app: tap **Guide** at the top right, or open [guide.html](https://awarently.github.io/cartesian-billiards/guide.html). It is cached for offline use.
+
 ## Install on iPhone or iPad
 
 1. Open the GitHub Pages URL of this repo in **Safari**.
@@ -55,6 +59,7 @@ Point-ball mode (uncheck *Real ball size*) reproduces the spec reference test: b
 | `solver.js` | Geometry engine. No DOM. Runs in the browser and in Node. |
 | `app.js` | SVG table, input, instruction panel. |
 | `index.html`, `styles.css`, `fonts.css` | Page and styles. Fonts are self-hosted. |
+| `guide.html` | Player guide. Self-contained, linked from the app header. |
 | `sw.js` | Service worker for offline use. |
 | `manifest.webmanifest`, `icons/` | Home-screen install. |
 | `tests/solver.test.js` | Solver unit tests. |
