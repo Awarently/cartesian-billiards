@@ -202,6 +202,44 @@ test('two-cushion kick contacts cushions in the requested order', () => {
   assert.ok(s.cushionContacts[0].center.x < s.cushionContacts[1].center.x);
 });
 
+console.log('Head-math rules');
+test('around the corner: S=1, aim T6 lands B5 (counted from R: 7 - 2x2 = 3)', () => {
+  const s = CB.solveKick({ cue: cue(2.25, 1), object: obj(3.75, 1), rails: ['T', 'R', 'B'], cfg, pointMode: true });
+  assert.ok(s.valid, s.errors.join('; '));
+  const m = CB.headMath(s);
+  assert.strictEqual(m.rule, 'corner');
+  assert.strictEqual(m.corner, 'R');
+  near(m.S, 1, 1e-9); near(m.A, 6, 1e-9); near(m.s, 7, 1e-9); near(m.a, 2, 1e-9); near(m.l, 3, 1e-9);
+  near(m.predicted, 5, 1e-9); near(m.actual, 5, 1e-9);
+});
+test('around the corner works mirrored (T, L, B) and on short rails (L, T, R)', () => {
+  const a = CB.headMath(CB.solveKick({ cue: cue(8 - 2.25, 1), object: obj(8 - 3.75, 1), rails: ['T', 'L', 'B'], cfg, pointMode: true }));
+  assert.strictEqual(a.rule, 'corner'); near(a.predicted, a.actual, 1e-9); near(a.predicted, 3, 1e-9);
+  const b = CB.solveKick({ cue: cue(1, 1.2), object: obj(1.5, 2.6), rails: ['L', 'T', 'R'], cfg, pointMode: true });
+  if (b.valid) { const m = CB.headMath(b); assert.strictEqual(m.rule, 'corner'); near(m.predicted, m.actual, 1e-9); }
+});
+test('equal steps: S=0.5, aim T2.5 gives B4.5 then T6.5', () => {
+  const s = CB.solveKick({ cue: cue(1, 1), object: obj(7, 3), rails: ['T', 'B', 'T'], cfg, pointMode: true });
+  assert.ok(s.valid, s.errors.join('; '));
+  const m = CB.headMath(s);
+  assert.strictEqual(m.rule, 'steps');
+  near(m.S, 0.5, 1e-9); near(m.step, 2, 1e-9);
+  near(m.contacts[0].predicted, 4.5, 1e-9); near(m.contacts[0].actual, 4.5, 1e-9);
+  near(m.contacts[1].predicted, 6.5, 1e-9); near(m.contacts[1].actual, 6.5, 1e-9);
+});
+test('one cushion: weighted average gives the reference T4.57', () => {
+  const s = CB.solveBank({ cue: cue(1, 0.5), object: obj(2, 1), pocket: P('BR'), rails: ['T'], cfg, pointMode: true });
+  const m = CB.headMath(s);
+  assert.strictEqual(m.rule, 'weighted');
+  near(m.d1, 3); near(m.d2, 4); near(m.predicted, 32 / 7, 1e-9);
+});
+test('with real ball size the rule lands within 0.4 diamond of the solver', () => {
+  const s = CB.solveKick({ cue: cue(2.25, 1), object: obj(3.75, 1), rails: ['T', 'R', 'B'], cfg });
+  assert.ok(s.valid, s.errors.join('; '));
+  const m = CB.headMath(s);
+  assert.ok(Math.abs(m.predicted - m.actual) < 0.4, 'diff ' + (m.predicted - m.actual));
+});
+
 console.log('Coordinates');
 test('view rotation round-trips and keeps table coordinates', () => {
   ['h', 'v'].forEach(o => {

@@ -63,7 +63,8 @@ p, li { max-width: 66ch; }
 p { margin: 0 0 12px; }
 ul, ol { padding-left: 24px; margin: 0 0 14px; }
 li { margin-bottom: 6px; }
-code, .num { font-family: var(--font-mono); font-weight: 600; font-size: 0.92em; color: var(--mark); white-space: nowrap; }
+code, .num { font-family: var(--font-mono); font-weight: 600; font-size: 0.92em; color: var(--mark); }
+.num { white-space: nowrap; }
 .num.plain { color: var(--ink); }
 
 .toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; padding: 0; list-style: none; margin: 8px 0 0; }
@@ -127,9 +128,11 @@ td:first-child { white-space: nowrap; }
     <li><a href="#bank"><span>3</span>Plan a bank shot</a></li>
     <li><a href="#read"><span>4</span>Read the result</a></li>
     <li><a href="#kick"><span>5</span>Plan a kick shot</a></li>
-    <li><a href="#tools"><span>6</span>Other controls</a></li>
-    <li><a href="#limits"><span>7</span>What the numbers do not include</a></li>
-    <li><a href="#install"><span>8</span>Install and use offline</a></li>
+    <li><a href="#math"><span>6</span>Do the math in your head</a></li>
+    <li><a href="#drill"><span>7</span>Kick drill</a></li>
+    <li><a href="#tools"><span>8</span>Other controls</a></li>
+    <li><a href="#limits"><span>9</span>What the numbers do not include</a></li>
+    <li><a href="#install"><span>10</span>Install and use offline</a></li>
   </ul>
 
   <!-- ============ 1 ============ -->
@@ -386,8 +389,101 @@ td:first-child { white-space: nowrap; }
     <li><b>To also make the ball,</b> select <i>Pocket the ball</i>, then tap a pocket. The app then aims the cue ball at the ghost ball, so it hits the object ball on the correct side to send it to that pocket.</li>
   </ol>
 
+
   <!-- ============ 6 ============ -->
-  <h2 id="tools"><span class="n">6</span>Other controls</h2>
+  <h2 id="math"><span class="n">6</span>Do the math in your head</h2>
+  <p>At the table you do not have the app in your hand. These rules give the same numbers with simple arithmetic. The app shows the rule for each route in the dashed box under the result, with your numbers filled in, for example <code>In your head (from R): 7.0 − 2×2.0 = 3.0 → B5.0</code>.</p>
+
+  <h3>One cushion: the weighted average</h3>
+  <p>Measure two things for the ball and for the target (the pocket, or the ball you want to hit):</p>
+  <ul>
+    <li>its position <b>along</b> the cushion you bank off, and</li>
+    <li>its distance <b>from</b> that cushion.</li>
+  </ul>
+  <div class="box">
+    <p><b>Aim = (ball position × target distance + target position × ball distance) ÷ (ball distance + target distance)</b></p>
+  </div>
+  <p>The aim point is always between the ball and the target, closer to whichever is nearer the cushion. If both are the same distance from the cushion, aim exactly halfway between them.</p>
+  <p><b>Example.</b> Ball at (2, 1), bottom-right pocket at (8, 0), bank off the top rail. Ball: position 2, distance 3. Pocket: position 8, distance 4. Aim = (2 × 4 + 8 × 3) ÷ 7 = <code>T4.57</code>.</p>
+  <p><b>Corner-pocket shortcut.</b> To bank into the top-left pocket off the bottom rail: <b>B = x × 4 ÷ (y + 4)</b>. A ball at (3, 2) gives 12 ÷ 6 = <code>B2.0</code>.</p>
+
+  <h3>The start number, S</h3>
+  <p>The two rules below need one more number. Hold your cue along the line you plan to shoot. Follow that line <b>backward</b>, past the ball, to the rail behind it. The diamond number where it crosses is the start number, S. The app draws this as a dotted line with a white <b>S</b> marker.</p>
+  <p>S is about the line, not the ball. The ball can be anywhere on that line.</p>
+
+  <h3>Rule 1: equal steps (cross the table and back)</h3>
+  <p>Use it when the ball goes from one long rail to the other and back, for example top, bottom, top.</p>
+  <div class="box">
+    <p><b>Step = Aim − S.</b> Each cushion after the first is one more step along.</p>
+  </div>
+  <p><b>Example.</b> S = 0.5, aim <code>T2.5</code>. Step = 2.0. The ball hits <code>B4.5</code>, then <code>T6.5</code>.</p>
+  <p>To reach a spot X after k cushions: <b>Aim = S + (X − S) ÷ (k + 1)</b>. With one cushion that is the halfway point between S and X.</p>
+
+  <h3>Rule 2: around the corner (three cushions)</h3>
+  <p>Use it when the ball goes long rail, short rail, long rail, for example top, right, bottom. This is the usual way out of a safety at the far end of the table.</p>
+  <ol class="steps">
+    <li><b>Count from the short rail you go around.</b> If you go around the right rail, every long-rail number n becomes 8 − n. B1 becomes 7, T6 becomes 2, B5 becomes 3. Around the left rail, the numbers stay as they are.</li>
+    <li><b>Land = Start − 2 × Aim.</b></li>
+    <li><b>To hit a spot, turn it round: Aim = (Start − Land) ÷ 2.</b></li>
+  </ol>
+
+  <figure>
+    <svg viewBox="0 0 1000 640" role="img" aria-label="Around the corner example. Start S at B1. Aim at T6. The ball goes to R2.4, then lands at B5. Counted from the right rail: start 7, aim 2, land 7 minus 4 equals 3.">
+      <rect x="62" y="62" width="876" height="456" rx="20" fill="var(--wood)"/>
+      <rect x="80" y="80" width="840" height="420" fill="var(--cloth)"/>
+      <g fill="#0a0806">
+        <circle cx="80" cy="80" r="20"/><circle cx="500" cy="76" r="17"/><circle cx="920" cy="80" r="20"/>
+        <circle cx="80" cy="500" r="20"/><circle cx="500" cy="504" r="17"/><circle cx="920" cy="500" r="20"/>
+      </g>
+      <g fill="var(--muted)" font-size="30" text-anchor="middle">
+        <text x="80" y="44">0</text><text x="185" y="44">1</text><text x="290" y="44">2</text><text x="395" y="44">3</text><text x="500" y="44">4</text>
+        <text x="605" y="44">5</text><text x="710" y="44">6</text><text x="815" y="44">7</text><text x="920" y="44">8</text>
+        <text x="80" y="562">0</text><text x="185" y="562">1</text><text x="290" y="562">2</text><text x="395" y="562">3</text><text x="500" y="562">4</text>
+        <text x="605" y="562">5</text><text x="710" y="562">6</text><text x="815" y="562">7</text><text x="920" y="562">8</text>
+      </g>
+      <g fill="var(--warn)" font-size="28" text-anchor="middle">
+        <text x="30" y="612" text-anchor="start" font-size="22">from R</text>
+        <text x="185" y="612">7</text><text x="290" y="612">6</text><text x="395" y="612">5</text><text x="500" y="612">4</text>
+        <text x="605" y="612">3</text><text x="710" y="612">2</text><text x="815" y="612">1</text><text x="920" y="612">0</text>
+      </g>
+      <line x1="185" y1="500" x2="316" y2="395" stroke="var(--pearl)" stroke-width="3" stroke-dasharray="4 8" stroke-linecap="round"/>
+      <polyline points="316,395 710,80 920,248 605,500 474,395" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+      <circle cx="316" cy="395" r="11" fill="#fbf8ee" stroke="rgba(0,0,0,.4)" stroke-width="1.5"/>
+      <circle cx="474" cy="395" r="11" fill="var(--object)" stroke="rgba(0,0,0,.4)" stroke-width="1.5"/>
+      <circle cx="710" cy="80" r="9" fill="var(--mark)"/><circle cx="920" cy="248" r="9" fill="var(--mark)"/><circle cx="605" cy="500" r="9" fill="var(--mark)"/>
+      <rect x="652" y="96" width="116" height="42" rx="6" fill="#10201f" stroke="var(--mark)" stroke-width="2.5"/>
+      <text x="710" y="126" fill="var(--mark)" font-size="27" text-anchor="middle">T6.0</text>
+      <rect x="770" y="226" width="122" height="42" rx="6" fill="#10201f" stroke="var(--mark)" stroke-width="2.5"/>
+      <text x="831" y="256" fill="var(--mark)" font-size="27" text-anchor="middle">R2.4</text>
+      <rect x="547" y="440" width="116" height="42" rx="6" fill="#10201f" stroke="var(--mark)" stroke-width="2.5"/>
+      <text x="605" y="470" fill="var(--mark)" font-size="27" text-anchor="middle">B5.0</text>
+      <rect x="128" y="440" width="114" height="42" rx="21" fill="var(--room)" stroke="var(--pearl)" stroke-width="2" stroke-dasharray="5 4"/>
+      <text x="185" y="470" fill="var(--pearl)" font-size="27" text-anchor="middle">S 1.0</text>
+    </svg>
+    <figcaption>Start S = B1. Aim T6. Counted from the right rail (orange numbers): start 7, aim 2. Land = 7 − 2 × 2 = 3, which is B5. The other way round: to land on B5 (3) from start 7, aim = (7 − 3) ÷ 2 = 2, which is T6.</figcaption>
+  </figure>
+
+  <div class="box warn">
+    <h3>What these rules do not include</h3>
+    <p>The rules follow the centre of a point-sized ball. With a real ball the app's numbers move by up to about 0.3 diamond, and the app tells you the difference. Speed and spin move the ball more than that. On your own table, note how far the ball lands from the rule, for example "Rule 2 lands half a diamond short". That one correction then works for every shot of that type on that table.</p>
+  </div>
+  <p>There is no add-or-subtract rule for two cushions next to each other, such as top then right. Those balls come back parallel to the line they went in on. For those, use the aim points.</p>
+
+  <!-- ============ 7 ============ -->
+  <h2 id="drill"><span class="n">7</span>Kick drill</h2>
+  <p>Practise finding the first aim point without seeing the answer.</p>
+  <ol class="steps">
+    <li><b>Tap Drill</b> at the top of the screen. The app sets up a safety: ball 2 blocks the direct shot from the cue ball to ball 1.</li>
+    <li><b>Read the task.</b> It names the cushions to use, for example <i>the top, right and then bottom cushions</i>.</li>
+    <li><b>Work out your aim</b> with the rules above.</li>
+    <li><b>Tap that point on the cushion.</b> An orange marker shows your aim, for example <code>You T5.80</code>. Tap again to move it.</li>
+    <li><b>Tap Check.</b> The app shows the answer, how far off you were in diamonds, the full path, and the rule worked out with the real numbers.</li>
+    <li><b>Tap Next layout</b> for another, or <b>Exit drill</b> to go back to your own table layout.</li>
+  </ol>
+  <p>The drill keeps a count on this device: how many you have done, how often you picked the right cushion, and your average error. Within 0.15 diamond shows in green.</p>
+
+  <!-- ============ 8 ============ -->
+  <h2 id="tools"><span class="n">8</span>Other controls</h2>
   <p>These are in <i>Show numbers and options</i>.</p>
   <div class="table-wrap">
     <table>
@@ -408,7 +504,7 @@ td:first-child { white-space: nowrap; }
   <p>The app keeps your last layout and settings on each device. It does not sync between devices.</p>
 
   <!-- ============ 7 ============ -->
-  <h2 id="limits"><span class="n">7</span>What the numbers do not include</h2>
+  <h2 id="limits"><span class="n">9</span>What the numbers do not include</h2>
   <p>The app uses ideal geometry: the ball leaves the cushion at the same angle it comes in. A real table is different:</p>
   <ul>
     <li><b>Speed.</b> Hard shots push into the cushion and come off shorter. Soft shots are closer to the number.</li>
@@ -420,7 +516,7 @@ td:first-child { white-space: nowrap; }
   <p>The pocket openings in the app are estimates. A shot near a pocket jaw may show <i>No route</i> when it can go in on a real table, or the reverse.</p>
 
   <!-- ============ 8 ============ -->
-  <h2 id="install"><span class="n">8</span>Install and use offline</h2>
+  <h2 id="install"><span class="n">10</span>Install and use offline</h2>
   <ol class="steps">
     <li>On iPhone or iPad, open <a href="https://awarently.github.io/cartesian-billiards/">awarently.github.io/cartesian-billiards</a> in <b>Safari</b>.</li>
     <li>Tap <b>Share</b>, then <b>Add to Home Screen</b>.</li>

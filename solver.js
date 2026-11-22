@@ -488,6 +488,70 @@
     return sols;
   }
 
+  /* ---------- head-math rules ---------- */
+
+  var OPPOSITE = { T: 'B', B: 'T', L: 'R', R: 'L' };
+
+  /* Distance along a rail measured from the cushion `cornerRail`. Applying it twice gives the original value. */
+  function fromCorner(cornerRail, v) {
+    return cornerRail === 'R' ? W - v : cornerRail === 'T' ? H - v : v;
+  }
+
+  /*
+   * Express a solution as a rule a player can do in their head.
+   * All numbers are on the cushion-nose lines (the numbers printed on the rails).
+   *   start: where the first ball line, sighted backward, crosses the rail
+   *          opposite the first cushion (S).
+   *   rule 'weighted': 1 cushion. Aim = (ball * d2 + target * d1) / (d1 + d2).
+   *   rule 'steps':    cushions alternate between two parallel rails.
+   *                    Each contact = Aim + k * (Aim - S).
+   *   rule 'corner':   3 cushions: long, short, long (or short, long, short).
+   *                    Counted from the middle cushion: Land = S - 2 * Aim.
+   * The rules treat the ball as a point. `actual` is the solver's answer
+   * with ball size, so the two can differ by a little.
+   */
+  function headMath(sol) {
+    if (!sol || !sol.valid || !sol.cushionContacts.length) return null;
+    var path = sol.shotType === 'bank' ? sol.objectBallPath : sol.cueBallPath;
+    var seq = sol.railSequence, n = seq.length, c = sol.cushionContacts;
+    var p0 = path[0], target = path[path.length - 1];
+    var A = c[0].aimCoord;
+
+    if (n === 1) {
+      var rail = RAILS[seq[0]], ax = rail.axis, tx = ax === 'y' ? 'x' : 'y';
+      var d1 = Math.abs(p0[ax] - rail.value), d2 = Math.abs(target[ax] - rail.value);
+      var b = p0[tx], t = target[tx];
+      return {
+        rule: 'weighted', rail: seq[0], ball: b, target: t, d1: d1, d2: d2,
+        predicted: (b * d2 + t * d1) / (d1 + d2), actual: A
+      };
+    }
+
+    var opp = OPPOSITE[seq[0]];
+    var back = intersect(p0, c[0].center, opp, 0);
+    if (!back) return null;
+    var S = along(opp, back.point);
+    var start = { rail: opp, value: S, point: back.point };
+
+    var alternating = true;
+    for (var i = 1; i < n; i++) if (seq[i] !== OPPOSITE[seq[i - 1]]) alternating = false;
+    if (alternating) {
+      var step = A - S, steps = [];
+      for (var k = 1; k < n; k++) steps.push({ rail: seq[k], predicted: A + k * step, actual: c[k].aimCoord });
+      return { rule: 'steps', start: start, S: S, A: A, step: step, contacts: steps };
+    }
+
+    if (n === 3 && seq[2] === opp && seq[1] !== seq[0] && seq[1] !== opp) {
+      var corner = seq[1];
+      var s = fromCorner(corner, S), a = fromCorner(corner, A), l = s - 2 * a;
+      return {
+        rule: 'corner', start: start, corner: corner, S: S, A: A, s: s, a: a, l: l,
+        landRail: seq[2], predicted: fromCorner(corner, l), actual: c[2].aimCoord
+      };
+    }
+    return { rule: null, start: start, adjacent: n === 2 };
+  }
+
   /* Plain-language position on a rail, relative to the nearest half diamond. */
   function describeCoord(v) {
     var near = Math.round(v * 2) / 2, diff = v - near;
@@ -506,6 +570,7 @@
     pocketAtContact: pocketAtContact, pocketApproach: pocketApproach,
     ghostBall: ghostBall, cutAngle: cutAngle,
     solveBank: solveBank, solveKick: solveKick, solveAll: solveAll, score: score, difficulty: difficulty,
+    headMath: headMath, fromCorner: fromCorner, OPPOSITE: OPPOSITE,
     describeCoord: describeCoord, fmt: fmt, dist: dist, unit: unit, sub: sub, add: add, mul: mul
   };
 });

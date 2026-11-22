@@ -4,7 +4,7 @@ Every position has a number. Every shot has a solution.
 
 A bank and kick shot calculator for pool. Place the balls, tap a pocket, and the app gives the cushion aim point as one number, for example `T4.64` (top rail, 4.64 diamonds from the left corner).
 
-Bank, kick and kick-to-pocket shots off 1, 2 or 3 cushions, with every valid route listed and ranked. Ghost ball, cut angle, obstruction check. Installable on iPhone, iPad and Android. Works offline after the first load.
+Bank, kick and kick-to-pocket shots off 1, 2 or 3 cushions, with every valid route listed and ranked. Ghost ball, cut angle, obstruction check. Each route also shows a rule you can do in your head (weighted average, equal steps, around the corner), and a kick drill trains you to use them. Installable on iPhone, iPad and Android. Works offline after the first load.
 
 ## User guide
 
@@ -42,6 +42,18 @@ With real ball size on, the reflection line moves in by one ball radius (the bal
 - **Centre**: the ball-centre position at contact.
 
 Point-ball mode (uncheck *Real ball size*) reproduces the spec reference test: ball (2, 1) to pocket (8, 0) off the top rail gives `T4.57` (32/7).
+
+## Head-math rules
+
+`headMath()` in `solver.js` expresses a route as arithmetic on the rail numbers. S is where the first ball line, extended backward, crosses the rail opposite the first cushion.
+
+| Rule | Route | Formula |
+|---|---|---|
+| Weighted average | 1 cushion | Aim = (b·d₂ + t·d₁) ÷ (d₁ + d₂) |
+| Equal steps | Alternating parallel rails (T-B-T…) | Contact k = Aim + k·(Aim − S) |
+| Around the corner | Long-short-long or short-long-short | Counted from the middle cushion: Land = S − 2·Aim |
+
+These are exact for a point ball (unit tests). With ball size the solver can differ by up to ~0.3 diamond; the app shows the difference.
 
 ## Assumptions and limits
 

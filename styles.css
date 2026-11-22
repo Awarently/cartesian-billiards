@@ -69,6 +69,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 .bar-right { display: flex; align-items: center; gap: 8px; flex: none; }
 .guide-link {
+  cursor: pointer;
   display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 6px;
   background: var(--raise); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
   font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
@@ -87,6 +88,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .t-rail { fill: rgba(239, 230, 207, 0.55); font-family: var(--font-display) !important; font-weight: 700; font-size: 24px; text-anchor: middle; dominant-baseline: central; }
 .t-pill { fill: var(--mark); font-size: 29px; text-anchor: middle; dominant-baseline: central; }
 .t-guide { fill: var(--pearl); font-size: 24px; text-anchor: middle; dominant-baseline: central; }
+.t-start { fill: var(--pearl); font-size: 25px; text-anchor: middle; dominant-baseline: central; }
 .t-ball { fill: var(--pearl); font-size: 22px; text-anchor: middle; dominant-baseline: central; }
 
 .hud {
@@ -177,6 +179,20 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .status.bad { color: var(--bad); }
 .status.bad::before { border-radius: 0; height: 3px; }
 
+.rule-line {
+  margin: 0; padding: 6px 10px; border-radius: 6px; background: var(--room); border: 1px dashed rgba(239, 230, 207, 0.35);
+  font-family: var(--font-mono); font-weight: 500; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--pearl);
+  overflow-wrap: anywhere;
+}
+.rule-line b { color: var(--mark); font-weight: 600; }
+.system { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--room); border: 1px solid var(--line); }
+.system:empty { display: none; }
+.system h3 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pearl); }
+.system p { margin: 0 0 6px; font-size: 14px; color: var(--ink); max-width: 60ch; }
+.system p:last-child { margin-bottom: 0; }
+.system .eq { font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.system .eq b { color: var(--mark); font-weight: 600; }
+.system .note { color: var(--muted); font-size: 13px; }
 .instruction { margin: 14px 0 0; color: var(--ink); max-width: 65ch; text-wrap: pretty; }
 .instruction b { font-family: var(--font-mono); font-weight: 600; color: var(--mark); }
 
@@ -232,6 +248,27 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .opt-select select { min-height: 44px; padding: 0 8px; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
 
 .note { color: var(--muted); font-size: 13px; margin: 16px 0 0; max-width: 65ch; }
+
+/* ---------- drill ---------- */
+.drill-bar { display: flex; flex-direction: column; gap: 8px; }
+.drill-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.drill-title { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warn); }
+.drill-stats { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.drill-task { margin: 0; max-width: 60ch; }
+.drill-task b { color: var(--ink); }
+.drill-result { margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
+.drill-result:empty { display: none; }
+.drill-result .good { color: var(--ok); } .drill-result .off { color: var(--warn); } .drill-result .bad { color: var(--bad); }
+.drill-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.drill-btn { min-height: 44px; padding: 0 14px; border-radius: 6px; background: var(--raise); border: 1px solid var(--line); font-weight: 500; }
+.drill-btn.primary { background: var(--warn); border-color: var(--warn); color: #2a1803; font-weight: 600; }
+.drill-btn:disabled { opacity: 0.4; cursor: default; }
+#drill-toggle[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #2a1803; }
+.app.drilling .controls, .app.drilling .routes, .app.drilling .more-toggle { display: none; }
+.app.drilling:not(.revealed) .route, .app.drilling:not(.revealed) .subrow,
+.app.drilling:not(.revealed) .rule-line, .app.drilling:not(.revealed) .more { display: none !important; }
+.app.drilling.revealed .more { display: block; }
+.t-guess { fill: #2a1803; font-size: 27px; text-anchor: middle; dominant-baseline: central; }
 
 /* ---------- landscape: table and panel side by side ---------- */
 @media (min-aspect-ratio: 6/5) and (min-width: 700px) {

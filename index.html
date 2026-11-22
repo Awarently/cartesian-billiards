@@ -26,6 +26,7 @@
     </div>
     <div class="bar-right">
       <span class="badge" id="model-badge">Ideal geometry</span>
+      <button type="button" class="guide-link" id="drill-toggle">Drill</button>
       <a class="guide-link" href="guide.html">Guide</a>
     </div>
   </header>
@@ -40,6 +41,19 @@
 
   <section class="panel" id="panel" aria-label="Shot solution">
     <div class="quick">
+      <div class="drill-bar" id="drill-bar" hidden>
+        <div class="drill-head">
+          <span class="drill-title">Kick drill</span>
+          <span class="drill-stats" id="drill-stats"></span>
+        </div>
+        <p class="drill-task" id="drill-task"></p>
+        <p class="drill-result" id="drill-result" aria-live="polite"></p>
+        <div class="drill-actions">
+          <button type="button" class="drill-btn primary" id="drill-check">Check</button>
+          <button type="button" class="drill-btn" id="drill-next">Next layout</button>
+          <button type="button" class="drill-btn" id="drill-exit">Exit drill</button>
+        </div>
+      </div>
       <div class="controls">
         <div class="seg" role="group" aria-label="Shot type">
           <button type="button" id="mode-bank" aria-pressed="true">Bank</button>
@@ -61,6 +75,7 @@
         <span class="sub" id="sub"></span>
         <span class="status" id="status"></span>
       </div>
+      <p class="rule-line" id="rule-line" hidden></p>
 
       <button type="button" class="more-toggle" id="more-toggle" aria-expanded="false" aria-controls="more">
         <span id="more-label">Show numbers and options</span>
@@ -69,6 +84,7 @@
 
     <div class="more" id="more">
       <p class="instruction" id="instruction"></p>
+      <section class="system" id="system" aria-label="Work it out in your head"></section>
       <h2>Numbers</h2>
       <dl class="facts" id="facts"></dl>
 

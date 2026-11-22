@@ -31,8 +31,9 @@
   var state = defaults();
   var cfg = CB.tableConfig(state.table);
   var view = null, vbW = 0, vbH = 0;
-  var current = null, sols = [], validSols = [], counts = {}, autoPick = null;
+  var current = null, sols = [], validSols = [], counts = {}, autoPick = null, math = null;
   var drag = null, frame = 0;
+  var drill = { active: false, revealed: false };
   var undoStack = [], redoStack = [], saved = '';
 
   /* ---------- state helpers ---------- */
@@ -56,6 +57,7 @@
     state.pocket = s.pocket; state.target = s.target; state.balls = s.balls;
   }
   function persist() {
+    if (drill.active) return;
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* storage is optional */ }
   }
   function commit() {
@@ -141,10 +143,12 @@
       var m = sols.filter(function (s) { return s.railSequence.join('') === state.route; })[0];
       if (m) current = m;
     }
+    math = CB.headMath(current);
   }
 
   /* ---------- drawing helpers ---------- */
 
+  function hidePath() { return drill.active && !drill.revealed; }
   function S(p) { var s = view.toScreen(p); return { x: M + s.x * K, y: M + s.y * K }; }
   function n2(v) { return (Math.round(v * 10) / 10).toFixed(1); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -264,7 +268,15 @@
            text({ x: 0, y: d.y }, 't-guide', CB.fmt(d.y), view.orient === 'h' ? 44 : 0, view.orient === 'h' ? 0 : -20).replace('<text', '<text paint-order="stroke" stroke="var(--cloth-deep)" stroke-width="7"') + '</g>';
     }
 
-    if (sol && state.show.path) {
+    if (math && math.start && state.show.path && !hidePath()) {
+      var p0 = sol.shotType === 'bank' ? sol.objectBallPath[0] : sol.cueBallPath[0];
+      o += line(p0, math.start.point, 'stroke="var(--pearl)" stroke-opacity="0.8" stroke-width="3" stroke-dasharray="4 8" stroke-linecap="round"');
+      var sp = S(CB.add(math.start.point, outward(math.start.rail, 0.27)));
+      var sx = Math.min(vbW - 60, Math.max(60, sp.x)), sy = Math.min(vbH - 22, Math.max(22, sp.y));
+      o += '<rect x="' + n2(sx - 56) + '" y="' + n2(sy - 19) + '" width="112" height="38" rx="19" fill="var(--room)" stroke="var(--pearl)" stroke-width="2" stroke-dasharray="5 4"/>' +
+           '<text class="t-start" x="' + n2(sx) + '" y="' + n2(sy + 1) + '">S ' + CB.fmt(math.start.value, 1) + '</text>';
+    }
+    if (sol && state.show.path && !hidePath()) {
       var bad = !sol.valid;
       var cueCol = bad ? 'var(--bad)' : 'var(--cue)', objCol = bad ? 'var(--bad)' : 'var(--object)';
       var dash = bad ? ' stroke-dasharray="14 10"' : '';
@@ -278,7 +290,7 @@
       }
     }
 
-    if (sol) {
+    if (sol && !hidePath()) {
       sol.cushionContacts.forEach(function (c) {
         if (CB.dist(c.center, c.aim) > 0.005) {
           o += line(c.center, c.aim, 'stroke="var(--mark)" stroke-width="3" stroke-dasharray="6 6"');
@@ -311,9 +323,80 @@
     });
 
     /* aim labels go on top */
-    if (sol) sol.cushionContacts.forEach(function (c) { o += railPill(c); });
+    if (sol && !hidePath()) sol.cushionContacts.forEach(function (c) { o += railPill(c); });
 
+    if (drill.active && drill.guess) {
+      var g = drill.guess, gp = g.point, gs = S(CB.add(gp, outward(g.rail, CB.RAILS[g.rail].axis === 'x' && view.orient === 'h' || CB.RAILS[g.rail].axis === 'y' && view.orient === 'v' ? -0.95 : -0.45)));
+      o += circle(gp, 11, 'fill="var(--warn)" stroke="#2a1803" stroke-width="3"');
+      o += '<rect x="' + n2(gs.x - 70) + '" y="' + n2(gs.y - 20) + '" width="140" height="40" rx="6" fill="var(--warn)"/>' +
+           '<text class="t-guess" x="' + n2(gs.x) + '" y="' + n2(gs.y + 1) + '">You ' + g.rail + CB.fmt(g.value) + '</text>';
+    }
     gDyn.innerHTML = o;
+  }
+
+
+  /* ---------- head-math readout ---------- */
+
+  function f1(v) { return CB.fmt(v, 1); }
+  function f2(v) { return CB.fmt(v, 2); }
+  var CORNER_NAME = { T: 'top', B: 'bottom', L: 'left', R: 'right' };
+  function countWord(corner) {
+    if (corner === 'R') return 'a number n becomes 8 − n';
+    if (corner === 'T') return 'a number n becomes 4 − n';
+    return 'the numbers stay as they are';
+  }
+  function diffNote(pred, act, rail) {
+    return Math.abs(pred - act) < 0.03 ? '' :
+      '<p class="note">With real ball size the app shows ' + rail + f2(act) + '. The rule treats the ball as a point. ' +
+      'The difference is ' + f2(Math.abs(pred - act)) + ' diamond.</p>';
+  }
+  function renderMath(sol) {
+    var box = $('system'), rl = $('rule-line'), m = math;
+    if (!m || hidePath()) { box.innerHTML = ''; rl.hidden = true; return; }
+    var h = '', line1 = '';
+    if (m.rule === 'weighted') {
+      var r = m.rail, along = CB.RAILS[r].axis === 'y' ? 'X' : 'Y';
+      h = '<h3>In your head · one cushion</h3>' +
+        '<p>Measure along the ' + CB.RAILS[r].name + ' rail (' + along + ') and the distance from it.</p>' +
+        '<p class="eq">Ball: ' + f2(m.ball) + ', ' + f2(m.d1) + ' from the cushion</p>' +
+        '<p class="eq">Target: ' + f2(m.target) + ', ' + f2(m.d2) + ' from the cushion</p>' +
+        '<p class="eq">Aim = (' + f2(m.ball) + ' × ' + f2(m.d2) + ' + ' + f2(m.target) + ' × ' + f2(m.d1) + ') ÷ ' + f2(m.d1 + m.d2) +
+        ' = <b>' + r + f2(m.predicted) + '</b></p>' + diffNote(m.predicted, m.actual, r);
+      line1 = 'In your head: (' + f1(m.ball) + '×' + f1(m.d2) + ' + ' + f1(m.target) + '×' + f1(m.d1) + ') ÷ ' + f1(m.d1 + m.d2) + ' = <b>' + r + f2(m.predicted) + '</b>';
+    } else if (m.rule === 'steps') {
+      var seq = sol.railSequence, chain = [];
+      h = '<h3>In your head · equal steps</h3>' +
+        '<p>Sight the shot line back past the ball to the ' + CB.RAILS[m.start.rail].name + ' rail. That number is the start, S.</p>' +
+        '<p class="eq">S = ' + f2(m.S) + ' · Aim ' + seq[0] + f2(m.A) + '</p>' +
+        '<p class="eq">Step = ' + f2(m.A) + ' − ' + f2(m.S) + ' = <b>' + f2(m.step) + '</b></p>';
+      var prev = m.A;
+      m.contacts.forEach(function (c) {
+        h += '<p class="eq">Next: ' + f2(prev) + ' + ' + f2(m.step) + ' = <b>' + c.rail + f2(c.predicted) + '</b></p>';
+        chain.push(c.rail + f1(c.predicted)); prev = c.predicted;
+      });
+      h += '<p class="note">Every cushion adds the same step. To reach a spot X after k steps: Aim = S + (X − S) ÷ (k + 1).</p>';
+      var last = m.contacts[m.contacts.length - 1];
+      h += diffNote(last.predicted, last.actual, last.rail);
+      line1 = 'In your head: S ' + f1(m.S) + ' → ' + seq[0] + f1(m.A) + ', step ' + f1(m.step) + ' → <b>' + chain.join(' → ') + '</b>';
+    } else if (m.rule === 'corner') {
+      var cn = CORNER_NAME[m.corner], sr = m.start.rail, fr = sol.railSequence[0];
+      h = '<h3>In your head · around the corner</h3>' +
+        '<p>Count every number from the ' + cn + ' rail: ' + countWord(m.corner) + '.</p>' +
+        '<p class="eq">Start: sight the line back to the ' + CB.RAILS[sr].name + ' rail, ' + sr + f2(m.S) + ' → ' + f2(m.s) + '</p>' +
+        '<p class="eq">Aim: ' + fr + f2(m.A) + ' → ' + f2(m.a) + '</p>' +
+        '<p class="eq">Land = ' + f2(m.s) + ' − 2 × ' + f2(m.a) + ' = ' + f2(m.l) + ' → <b>' + m.landRail + f2(m.predicted) + '</b></p>' +
+        '<p class="note">To hit a spot: Aim = (Start − Land) ÷ 2, all counted from the ' + cn + ' rail.</p>' +
+        diffNote(m.predicted, m.actual, m.landRail);
+      line1 = 'In your head (from ' + m.corner + '): ' + f1(m.s) + ' − 2×' + f1(m.a) + ' = ' + f1(m.l) + ' → <b>' + m.landRail + f1(m.predicted) + '</b>';
+    } else {
+      h = '<h3>In your head</h3><p>' + (m.adjacent
+        ? 'Two cushions next to each other: the ball comes back parallel to the line it went in on. There is no add-or-subtract rule for this route. Use the aim points.'
+        : 'There is no add-or-subtract rule for this route. Use the aim points, or try a route that crosses the table or goes around one corner.') + '</p>';
+      line1 = '';
+    }
+    box.innerHTML = h;
+    rl.innerHTML = line1;
+    rl.hidden = !line1;
   }
 
   /* ---------- panel ---------- */
@@ -418,6 +501,8 @@
       sub.textContent = otherCounts();
     }
 
+    renderMath(sol);
+
     /* facts */
     var f = [];
     function row(k, v, cls) { f.push('<dt>' + k + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd>'); }
@@ -512,6 +597,7 @@
   svg.addEventListener('pointerdown', function (e) {
     if (e.button && e.button !== 0) return;
     var t = toTable(e); if (!t) return;
+    if (drill.active) { drillTap(t.p); return; }
     var grab = Math.max(0.32, 26 / t.pxPerUnit), best = null, bd = Infinity;
     state.balls.forEach(function (b) { var d = CB.dist(b, t.p); if (d < grab && d < bd) { bd = d; best = b; } });
     if (best) {
@@ -642,6 +728,124 @@
     state.orient = view.orient === 'h' ? 'v' : 'h';
     persist(); drawStatic(); render();
   });
+
+  /* ---------- kick drill ---------- */
+
+  var DRILL_STORE = 'cartesian-billiards-drill';
+  function drillStats() {
+    try { return JSON.parse(localStorage.getItem(DRILL_STORE)) || { n: 0, railRight: 0, sumErr: 0, errs: [] }; }
+    catch (e) { return { n: 0, railRight: 0, sumErr: 0, errs: [] }; }
+  }
+  function saveDrillStats(s) { try { localStorage.setItem(DRILL_STORE, JSON.stringify(s)); } catch (e) { /* optional */ } }
+  function showDrillStats() {
+    var s = drillStats();
+    $('drill-stats').textContent = s.n
+      ? s.n + ' done · right cushion ' + s.railRight + '/' + s.n + (s.railRight ? ' · average error ' + CB.fmt(s.sumErr / s.railRight) + ' diamond' : '')
+      : 'No drills yet';
+  }
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function genDrill() {
+    var r = cfg.ballRadius;
+    for (var tries = 0; tries < 600; tries++) {
+      var n = [1, 2, 3, 3][Math.floor(Math.random() * 4)];
+      var cue = { id: 'cue', type: 'cue', x: rnd(0.5, 7.5), y: rnd(0.45, 3.55) };
+      var ob = { id: 'o1', type: 'object', n: 1, x: rnd(0.5, 7.5), y: rnd(0.45, 3.55) };
+      var d = CB.dist(cue, ob);
+      if (d < 2.2) continue;
+      var u = CB.unit(CB.sub(ob, cue)), f = rnd(0.35, 0.65), j2 = rnd(-0.6, 0.6) * r;
+      var bl = { id: 'o2', type: 'object', n: 2, x: cue.x + u.x * d * f - u.y * j2, y: cue.y + u.y * d * f + u.x * j2 };
+      if (!CB.insideSurface(bl, r + 0.05) || CB.dist(bl, cue) < 4 * r || CB.dist(bl, ob) < 4 * r) continue;
+      var req = { cue: cue, object: ob, others: [bl], cfg: cfg, pointMode: state.pointMode };
+      var cands = CB.solveAll('kick', req, n).filter(function (s) {
+        if (!s.valid || s.warnings.length) return false;
+        var c0 = s.cushionContacts[0], len = CB.RAILS[c0.rail].length;
+        if (c0.aimCoord < 0.3 || c0.aimCoord > len - 0.3) return false;
+        var m = CB.headMath(s);
+        return m && m.rule;
+      });
+      if (!cands.length) continue;
+      var pick = cands[Math.floor(Math.random() * cands.length)];
+      return { balls: [cue, ob, bl], seq: pick.railSequence.join('') };
+    }
+    return null;
+  }
+
+  function newDrill() {
+    var g = genDrill();
+    if (!g) { $('drill-task').textContent = 'Could not make a layout. Tap Next layout.'; return; }
+    state.mode = 'kick'; state.kickPocket = false; state.target = 'o1';
+    state.balls = g.balls; state.railCount = g.seq.length; state.route = g.seq;
+    drill.revealed = false; drill.guess = null;
+    var names = g.seq.split('').map(function (k) { return CB.RAILS[k].name; });
+    var list = names.length === 1 ? 'the ' + names[0] + ' cushion' : 'the ' + names.slice(0, -1).join(', ') + ' and then ' + names[names.length - 1] + ' cushions';
+    $('drill-task').innerHTML = 'Ball 2 blocks the direct shot. Kick the cue ball off <b>' + list + '</b> into ball 1. ' +
+      'Tap the cushion where you would aim, then tap Check.';
+    $('drill-result').innerHTML = '';
+    updateDrillUi();
+    render();
+  }
+  function updateDrillUi() {
+    var app = $('app');
+    app.classList.toggle('drilling', drill.active);
+    app.classList.toggle('revealed', drill.active && drill.revealed);
+    $('drill-bar').hidden = !drill.active;
+    $('drill-toggle').setAttribute('aria-pressed', drill.active);
+    $('drill-toggle').textContent = drill.active ? 'Exit drill' : 'Drill';
+    $('drill-check').disabled = drill.revealed;
+    showDrillStats();
+  }
+  function startDrill() {
+    drill.saved = JSON.stringify(state);
+    drill.active = true;
+    panel.classList.remove('open');
+    newDrill();
+  }
+  function exitDrill() {
+    drill.active = false; drill.revealed = false; drill.guess = null;
+    if (drill.saved) state = validate(JSON.parse(drill.saved));
+    cfg = CB.tableConfig(state.table);
+    updateDrillUi();
+    drawStatic(); render();
+  }
+  function drillTap(p) {
+    if (drill.revealed) return;
+    var cand = [
+      { rail: 'B', d: p.y }, { rail: 'T', d: 4 - p.y }, { rail: 'L', d: p.x }, { rail: 'R', d: 8 - p.x }
+    ].sort(function (a, b) { return a.d - b.d; })[0];
+    if (cand.d > 0.6) return;
+    var rail = CB.RAILS[cand.rail];
+    var v = Math.round(Math.min(rail.length, Math.max(0, CB.along(cand.rail, p))) * 20) / 20;
+    var point = rail.axis === 'y' ? { x: v, y: rail.value } : { x: rail.value, y: v };
+    drill.guess = { rail: cand.rail, value: v, point: point };
+    $('drill-result').innerHTML = 'Your aim: ' + cand.rail + CB.fmt(v) + '. Tap again to change it.';
+    drawDynamic();
+  }
+  function checkDrill() {
+    if (!drill.guess) { $('drill-result').innerHTML = '<span class="off">Tap a cushion first.</span>'; return; }
+    var sol = current;
+    if (!sol || !sol.valid) { newDrill(); return; }
+    var c0 = sol.cushionContacts[0], g = drill.guess, st = drillStats();
+    st.n++;
+    var html;
+    if (g.rail === c0.rail) {
+      var err = Math.abs(g.value - c0.aimCoord);
+      st.railRight++; st.sumErr += err; st.errs = (st.errs || []).concat([err]).slice(-50);
+      html = 'You ' + g.rail + CB.fmt(g.value) + ' · answer <b>' + c0.label + '</b> · ' +
+        '<span class="' + (err <= 0.15 ? 'good' : 'off') + '">off by ' + CB.fmt(err) + ' diamond</span>';
+    } else {
+      html = 'You ' + g.rail + CB.fmt(g.value) + ' · <span class="bad">wrong cushion</span> · answer <b>' + c0.label + '</b>';
+    }
+    saveDrillStats(st);
+    drill.revealed = true;
+    $('drill-result').innerHTML = html;
+    updateDrillUi();
+    render();
+  }
+  $('drill-toggle').addEventListener('click', function () { if (drill.active) exitDrill(); else startDrill(); });
+  $('drill-exit').addEventListener('click', exitDrill);
+  $('drill-next').addEventListener('click', newDrill);
+  $('drill-check').addEventListener('click', checkDrill);
 
   /* ---------- boot ---------- */
 
