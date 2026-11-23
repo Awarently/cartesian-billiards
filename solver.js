@@ -9,7 +9,8 @@
  *   Rails: B (y=0), T (y=4), L (x=0), R (x=8).
  *
  * Model: ideal geometry. Equal angle of incidence and reflection.
- *   No spin, speed, throw, or cushion compression.
+ *   No spin, throw, or cushion compression. A separate speed budget
+ *   rejects routes that need more cue speed than a player can control.
  *
  * Sections: coordinates, tableGeometry, reflections, routeSolver,
  *   collisionDetection, ghostBall, shot solvers, ranking.
@@ -103,6 +104,22 @@
       unitInches: unit,
       ballDiameter: dia,
       ballRadius: dia / 2 / unit,
+      /*
+       * Speed-budget constants. Textbook approximations, not measured.
+       * Table calibration should replace them.
+       *   rolling      rolling-resistance coefficient of the cloth
+       *   cushionE     cushion restitution (speed into the rail kept)
+       *   cushionSlide speed along the rail kept at a cushion
+       *   ballE        ball-to-ball restitution
+       *   pocketSpeed  speed (m/s) a ball still needs at the target
+       */
+      speed: {
+        rolling: o.rolling || 0.01,
+        cushionE: o.cushionE || 0.8,
+        cushionSlide: o.cushionSlide || 0.95,
+        ballE: o.ballE || 0.95,
+        pocketSpeed: o.pocketSpeed || 0.3
+      },
       pocketGeometry: {
         cornerJaw: (o.cornerJaw || 3.4) / unit,
         sideHalf: (o.sideHalf || 2.7) / unit,
@@ -453,6 +470,86 @@
     return sol;
   }
 
+  /* ---------- speed budget (playability) ---------- */
+
+  /*
+   * Work backward from the target to the speed the cue ball needs off the tip.
+   *   Rolling:  v_before^2 = v_after^2 + 2 * mu * g * L
+   *   Cushion:  speed along the rail x cushionSlide, speed into the rail x cushionE
+   *   Ball hit: object-ball speed = cue speed x cos(cut) x (1 + ballE) / 2
+   * Ignores spin, the sliding phase, throw and cushion compression.
+   * All of these make fast, thin shots harder, so the estimate is generous.
+   */
+  var G = 9.81;
+  var SPEEDS = [
+    { max: 2, name: 'Soft' },
+    { max: 4, name: 'Medium' },
+    { max: 6, name: 'Firm' },
+    { max: 7.5, name: 'Hard' }
+  ];
+  var MAX_SPEED = 7.5;
+  function speedName(v) {
+    for (var i = 0; i < SPEEDS.length; i++) if (v <= SPEEDS[i].max) return SPEEDS[i].name;
+    return 'Not playable';
+  }
+  /* Fastest speed a player can still aim accurately at this cut. 7.5 m/s up to 45 deg, 3 m/s at 80 deg. */
+  function maxSpeedForCut(deg) {
+    if (deg <= 45) return MAX_SPEED;
+    return Math.max(2, MAX_SPEED - (deg - 45) / 35 * 4.5);
+  }
+  /* Speed kept at a cushion for a ball arriving along dir. */
+  function cushionKeep(railId, dir, sp) {
+    var d = unit(dir), axis = RAILS[railId].axis;
+    var into = Math.abs(d[axis]), slide = Math.abs(axis === 'y' ? d.x : d.y);
+    return Math.sqrt(Math.pow(slide * sp.cushionSlide, 2) + Math.pow(into * sp.cushionE, 2));
+  }
+  /* Speed needed at points[0] so the ball reaches the last point with vEnd. Rails between points. */
+  function speedBack(points, rails, vEnd, unitM, sp) {
+    var v = vEnd, decel = sp.rolling * G;
+    for (var i = points.length - 1; i >= 1; i--) {
+      v = Math.sqrt(v * v + 2 * decel * dist(points[i - 1], points[i]) * unitM);
+      if (i - 1 >= 1 && rails[i - 2]) v = v / cushionKeep(rails[i - 2], sub(points[i - 1], points[i - 2]), sp);
+    }
+    return v;
+  }
+  function speedBudget(sol, cfg) {
+    var sp = cfg.speed, unitM = cfg.unitInches * 0.0254, seq = sol.railSequence;
+    var cut = sol.cutAngle ? sol.cutAngle.deg : 0;
+    var transfer = Math.cos(cut * Math.PI / 180) * (1 + sp.ballE) / 2;
+    var cueAtHit, need, objectStart = null;
+    if (sol.shotType === 'bank') {
+      objectStart = speedBack(sol.objectBallPath, seq, sp.pocketSpeed, unitM, sp);
+      cueAtHit = objectStart / transfer;
+      need = speedBack(sol.cueBallPath, [], cueAtHit, unitM, sp);
+    } else {
+      if (sol.shotType === 'kick-pocket') {
+        objectStart = speedBack(sol.objectBallPath, [], sp.pocketSpeed, unitM, sp);
+        cueAtHit = objectStart / transfer;
+      } else {
+        cueAtHit = sp.pocketSpeed;
+      }
+      need = speedBack(sol.cueBallPath, seq, cueAtHit, unitM, sp);
+    }
+    var limit = maxSpeedForCut(cut);
+    return {
+      cueSpeed: need, cueAtHit: cueAtHit, objectStart: objectStart,
+      transfer: transfer, limit: limit, category: speedName(need),
+      mph: need * 2.237, playable: need <= limit
+    };
+  }
+  function checkSpeed(sol, cfg) {
+    if (!sol.valid || !sol.cutAngle) return;
+    var b = speedBudget(sol, cfg);
+    sol.speed = b;
+    if (b.playable) return;
+    var v = fmt(b.cueSpeed, 1) + ' m/s (' + Math.round(b.mph) + ' mph)';
+    if (b.cueSpeed > MAX_SPEED) {
+      fail(sol, 'Not playable: needs about ' + v + ' off the tip, more than a hard stroke');
+    } else {
+      fail(sol, 'Not playable: needs about ' + v + ', too fast to aim a ' + Math.round(sol.cutAngle.deg) + ' degree cut');
+    }
+  }
+
   /* ---------- ranking (heuristic, not a make probability) ---------- */
 
   /*
@@ -463,7 +560,8 @@
   function score(sol) {
     var cut = sol.cutAngle ? sol.cutAngle.deg : 0;
     var cutCost = cut <= 30 ? cut / 30 : 1 + (cut - 30) / 12;
-    return sol.travelDistance + 1.5 * (sol.railSequence.length - 1) + cutCost + sol.warnings.length;
+    var speedCost = sol.speed ? Math.max(0, sol.speed.cueSpeed - 4) : 0;
+    return sol.travelDistance + 1.5 * (sol.railSequence.length - 1) + cutCost + speedCost + sol.warnings.length;
   }
   function difficulty(s) {
     return s < 9 ? 'Easy' : s < 13 ? 'Moderate' : s < 17 ? 'Difficult' : 'Advanced';
@@ -476,6 +574,7 @@
       var r = {}; for (var k in req) r[k] = req[k];
       r.rails = seq;
       var s = type === 'bank' ? solveBank(r) : solveKick(r);
+      checkSpeed(s, r.cfg);
       s.difficultyScore = s.valid ? score(s) : null;
       s.difficulty = s.valid ? difficulty(s.difficultyScore) : null;
       return s;
@@ -570,6 +669,7 @@
     pocketAtContact: pocketAtContact, pocketApproach: pocketApproach,
     ghostBall: ghostBall, cutAngle: cutAngle,
     solveBank: solveBank, solveKick: solveKick, solveAll: solveAll, score: score, difficulty: difficulty,
+    speedBudget: speedBudget, checkSpeed: checkSpeed, speedName: speedName, maxSpeedForCut: maxSpeedForCut,
     headMath: headMath, fromCorner: fromCorner, OPPOSITE: OPPOSITE,
     describeCoord: describeCoord, fmt: fmt, dist: dist, unit: unit, sub: sub, add: add, mul: mul
   };

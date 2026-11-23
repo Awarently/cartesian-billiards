@@ -492,6 +492,7 @@
           (cs.length === 1 ? 'one cushion.' : cs.length + ' cushions.');
         sub.textContent = sol.difficulty + ' \u00b7 full hit \u00b7 cue travel ' + CB.fmt(sol.cueDistance) + ' diamonds';
       }
+      if (sol.speed) instr.innerHTML += ' Speed: ' + sol.speed.category.toLowerCase() + '.';
       if (sol.warnings.length) { instr.innerHTML += ' ' + esc(sentence(sol.warnings)); sub.textContent = sol.warnings[0]; }
     } else if (sol) {
       instr.textContent = 'No route off ' + railNames(sol.railSequence) + '. ' + sentence(sol.errors);
@@ -517,6 +518,11 @@
       });
       if (sol.ghostBallPosition) row('Ghost ball', pt(sol.ghostBallPosition));
       if (sol.cutAngle && (state.mode === 'bank' || state.kickPocket)) row('Cut angle', cutText(sol.cutAngle));
+      if (sol.speed) {
+        row('Speed needed', sol.speed.category + ' \u00b7 about ' + CB.fmt(sol.speed.cueSpeed, 1) + ' m/s (' +
+          Math.round(sol.speed.mph) + ' mph) off the tip \u00b7 limit at this cut ' + CB.fmt(sol.speed.limit, 1) +
+          ' m/s. Estimate, no spin', sol.speed.playable ? 'plain' : 'bad');
+      }
       if (sol.valid) {
         row('Difficulty', sol.difficulty + ' (heuristic score ' + CB.fmt(sol.difficultyScore, 1) + ', not a make percentage)', 'plain');
         row('Cue travel', distText(sol.cueDistance));
