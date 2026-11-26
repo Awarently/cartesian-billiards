@@ -296,3 +296,6 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: no-preference) {
   .cush, .route-chip, .seg button, .chip { transition: background-color 120ms, color 120ms, border-color 120ms; }
 }
+.system .calib { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.system .calib input { width: 5.5em; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: transparent; font-family: var(--font-mono); }
+.system .calib .opt-btn { padding: 6px 12px; min-height: 36px; }

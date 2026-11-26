@@ -549,7 +549,8 @@
       var corner = seq[1];
       var s = fromCorner(corner, S), a = fromCorner(corner, A), l = s - 2 * a;
       return {
-        rule: 'corner', start: start, corner: corner, S: S, A: A, s: s, a: a, l: l,
+        rule: 'corner', start: start, corner: corner, S: S, A: A, s: s, a: a, l: l, gap: s - l,
+        firstRail: seq[0], pocket: cornerPocket(seq[0], corner), landCount: l,
         landRail: seq[2], predicted: fromCorner(corner, l), actual: c[2].aimCoord
       };
     }
@@ -575,11 +576,38 @@
     var gap = b - t, a = gap / 2;
     var L = first.length, c = L - b, va = gap - c;
     return {
-      rule: 'count', start: null, firstRail: seq[0], nearRail: near, corner: corner,
+      rule: 'count', start: null, firstRail: seq[0], nearRail: near, landRail: near, corner: corner,
+      pocket: cornerPocket(seq[0], corner), landCount: t,
       b: b, t: t, gap: gap, a: a, hb: hb, ht: ht, railLength: L,
       predicted: fromCorner(corner, a), actual: A,
       video: { c: c, d: gap, a: va, value: fromCorner(corner, va) }
     };
+  }
+
+  /* The corner pocket where two cushions meet. */
+  function cornerPocket(r1, r2) {
+    for (var i = 0; i < POCKETS.length; i++) {
+      var pr = POCKETS[i].rails;
+      if (pr.length === 2 && pr.indexOf(r1) >= 0 && pr.indexOf(r2) >= 0) return POCKETS[i];
+    }
+    return null;
+  }
+
+  /*
+   * Table offset for the subtract-and-halve rules ('corner' and 'count').
+   * k = where the ball really reached the landing rail minus where the rule says,
+   * both counted from the corner cushion. A real table then needs
+   * aim = rule aim + k / 2 (moving the aim half a diamond moves the landing one).
+   *   calibrate(m, observed, aimShot): observed is the printed rail number where the ball landed
+   *     when shot at the printed aim aimShot (default: the rule's own aim).
+   *   tableAim(m, k): printed aim number on the first rail for this table.
+   */
+  function calibrate(m, observed, aimShot) {
+    var a = aimShot === undefined || aimShot === null ? m.a : fromCorner(m.corner, aimShot);
+    return fromCorner(m.corner, observed) - ((m.rule === 'count' ? m.b : m.s) - 2 * a);
+  }
+  function tableAim(m, k) {
+    return fromCorner(m.corner, m.a + (k || 0) / 2);
   }
 
   /* Plain-language position on a rail, relative to the nearest half diamond. */
@@ -600,7 +628,7 @@
     pocketAtContact: pocketAtContact, pocketApproach: pocketApproach,
     ghostBall: ghostBall, cutAngle: cutAngle,
     solveBank: solveBank, solveKick: solveKick, solveAll: solveAll, score: score, difficulty: difficulty,
-    headMath: headMath, fromCorner: fromCorner, OPPOSITE: OPPOSITE,
+    headMath: headMath, fromCorner: fromCorner, cornerPocket: cornerPocket, calibrate: calibrate, tableAim: tableAim, OPPOSITE: OPPOSITE,
     describeCoord: describeCoord, fmt: fmt, dist: dist, unit: unit, sub: sub, add: add, mul: mul
   };
 });

@@ -350,6 +350,25 @@
       '<p class="note">With real ball size the app shows ' + rail + f2(act) + '. The rule treats the ball as a point. ' +
       'The difference is ' + f2(Math.abs(pred - act)) + ' diamond.</p>';
   }
+  var TABLE_STORE = 'cartesian-billiards-table';
+  function tableOffsets() {
+    try { return JSON.parse(localStorage.getItem(TABLE_STORE)) || {}; } catch (e) { return {}; }
+  }
+  function tableOffset(rule) { var o = tableOffsets()[rule]; return typeof o === 'number' && isFinite(o) ? o : 0; }
+  function setTableOffset(rule, k) {
+    var o = tableOffsets();
+    if (k === null) delete o[rule]; else o[rule] = k;
+    try { localStorage.setItem(TABLE_STORE, JSON.stringify(o)); } catch (e) { /* optional */ }
+  }
+  document.addEventListener('click', function (e) {
+    var id = e.target && e.target.id;
+    if (!math || (id !== 'calib-save' && id !== 'calib-clear')) return;
+    if (id === 'calib-clear') { setTableOffset(math.rule, null); render(); return; }
+    var v = parseFloat($('calib-in').value);
+    if (!isFinite(v) || v < 0 || v > CB.RAILS[math.landRail].length) { $('calib-in').focus(); return; }
+    setTableOffset(math.rule, CB.calibrate(math, v, current && current.cushionContacts[0].aimCoord));
+    render();
+  });
   function renderMath(sol) {
     var box = $('system'), rl = $('rule-line'), m = math;
     if (!m || hidePath()) { box.innerHTML = ''; rl.hidden = true; return; }
@@ -378,34 +397,34 @@
       var last = m.contacts[m.contacts.length - 1];
       h += diffNote(last.predicted, last.actual, last.rail);
       line1 = 'In your head: S ' + f1(m.S) + ' → ' + seq[0] + f1(m.A) + ', step ' + f1(m.step) + ' → <b>' + chain.join(' → ') + '</b>';
-    } else if (m.rule === 'corner') {
-      var cn = CORNER_NAME[m.corner], sr = m.start.rail, fr = sol.railSequence[0];
-      h = '<h3>In your head · around the corner</h3>' +
-        '<p>Count every number from the ' + cn + ' rail: ' + countWord(m.corner) + '.</p>' +
-        '<p class="eq">Start: sight the line back to the ' + CB.RAILS[sr].name + ' rail, ' + sr + f2(m.S) + ' → ' + f2(m.s) + '</p>' +
-        '<p class="eq">Aim: ' + fr + f2(m.A) + ' → ' + f2(m.a) + '</p>' +
-        '<p class="eq">Land = ' + f2(m.s) + ' − 2 × ' + f2(m.a) + ' = ' + f2(m.l) + ' → <b>' + m.landRail + f2(m.predicted) + '</b></p>' +
-        '<p class="note">To hit a spot: Aim = (Start − Land) ÷ 2, all counted from the ' + cn + ' rail.</p>' +
-        diffNote(m.predicted, m.actual, m.landRail);
-      line1 = 'In your head (from ' + m.corner + '): ' + f1(m.s) + ' − 2×' + f1(m.a) + ' = ' + f1(m.l) + ' → <b>' + m.landRail + f1(m.predicted) + '</b>';
-    } else if (m.rule === 'count') {
-      var cr = CB.RAILS[m.corner].name, nr = CB.RAILS[m.nearRail].name, fr2 = m.firstRail;
-      var ball = sol.shotType === 'bank' ? 'Object ball' : 'Cue ball';
-      var targ = sol.shotType === 'bank' ? 'Pocket' : sol.shotType === 'kick-pocket' ? 'Ghost ball' : 'Object ball';
-      h = '<h3>In your head · count and subtract</h3>' +
-        '<p>Count along the ' + nr + ' rail, starting at the ' + cr + ' rail (that corner is 0).</p>' +
-        '<p class="eq">' + ball + ': ' + f1(m.b) + ' · ' + targ + ': ' + f1(m.t) + '</p>' +
-        '<p class="eq">Subtract: ' + f1(m.b) + ' − ' + f1(m.t) + ' = ' + f1(m.gap) + '</p>' +
-        '<p class="eq">Halve: ' + f1(m.gap) + ' ÷ 2 = ' + f2(m.a) + ' → aim ' + f2(m.a) + ' from the ' + cr + ' rail on the ' +
-        CB.RAILS[fr2].name + ' rail = <b>' + fr2 + f2(m.predicted) + '</b></p>' +
-        (Math.abs(m.hb - m.ht) > 0.25
-          ? '<p class="note">The rule is exact only when both balls are the same distance from the ' + nr + ' rail. Here they are ' +
-            f1(m.hb) + ' and ' + f1(m.ht) + ' diamond out, so trust the aim point.</p>' : '') +
-        diffNote(m.predicted, m.actual, fr2) +
-        '<p class="note">Video system (count from the far corner, distance minus cue number): ' + f1(m.video.d) + ' − ' +
-        f1(m.video.c) + ' = ' + f1(m.video.a) + ' → ' + fr2 + f2(m.video.value) + '. That is ' +
-        f2(Math.abs(m.video.value - m.actual)) + ' diamond from the app’s aim point.</p>';
-      line1 = 'In your head: (' + f1(m.b) + ' − ' + f1(m.t) + ') ÷ 2 = ' + f1(m.a) + ' from ' + m.corner + ' → <b>' + fr2 + f2(m.predicted) + '</b>';
+    } else if (m.rule === 'corner' || m.rule === 'count') {
+      var fr = m.firstRail, lr = m.landRail, pk = m.pocket ? m.pocket.name.toLowerCase() + ' pocket' : CB.RAILS[m.corner].name + ' corner';
+      var A0 = sol.cushionContacts[0].aimCoord, k = tableOffset(m.rule), adj = CB.tableAim(m, k);
+      var p0 = m.rule === 'count' ? f1(CB.fromCorner(m.corner, m.b)) : f1(m.S);
+      var p1 = f1(m.rule === 'count' ? CB.fromCorner(m.corner, m.t) : m.predicted), ruleAim = CB.fromCorner(m.corner, m.a);
+      var who0 = m.rule === 'count' ? (sol.shotType === 'bank' ? 'Object ball' : 'Cue ball') : 'Start S (sight the line back past the ball to the ' + CB.RAILS[m.start.rail].name + ' rail)';
+      var who1 = m.rule === 'count' ? (sol.shotType === 'bank' ? 'Pocket' : sol.shotType === 'kick-pocket' ? 'Ghost ball' : 'Object ball') : 'Landing spot';
+      h = '<h3>In your head · gap, halve, count in</h3>' +
+        '<p class="eq">' + who0 + ': ' + lr + p0 + '</p>' +
+        '<p class="eq">' + who1 + ': ' + lr + p1 + '</p>' +
+        '<p class="eq">1. Gap: ' + f2(m.gap) + ' diamonds</p>' +
+        '<p class="eq">2. Half: ' + f2(m.gap / 2) + '</p>' +
+        '<p class="eq">3. From the ' + pk + ', count ' + f2(m.gap / 2) + ' in along the ' + CB.RAILS[fr].name + ' rail → <b>' + fr + f2(ruleAim) + '</b></p>';
+      if (m.rule === 'count' && Math.abs(m.hb - m.ht) > 0.25)
+        h += '<p class="note">Exact only when both balls are the same distance from the ' + CB.RAILS[lr].name + ' rail. Here they are ' +
+          f1(m.hb) + ' and ' + f1(m.ht) + ' diamond out, so trust the aim point.</p>';
+      if (m.rule === 'corner')
+        h += '<p class="note">Move the start one diamond and the aim moves half a diamond the same way. Your memorised shot from a corner slides along this way.</p>';
+      h += diffNote(ruleAim, A0, fr);
+      if (k) h += '<p class="eq">Your table (' + (k > 0 ? '+' : '') + f2(k) + '): aim <b>' + fr + f2(adj) + '</b></p>';
+      h += '<p class="note calib">My table: shot at ' + fr + f2(A0) + ', the ball reached the ' + CB.RAILS[lr].name + ' rail at ' +
+        '<input id="calib-in" type="number" inputmode="decimal" step="0.1" min="0" max="' + CB.RAILS[lr].length + '" placeholder="' + lr + '"> ' +
+        '<button type="button" id="calib-save" class="opt-btn">Save</button>' +
+        (k ? ' <button type="button" id="calib-clear" class="opt-btn">Clear</button>' : '') + '</p>';
+      if (m.rule === 'count')
+        h += '<p class="note">Video system (distance minus cue number from the far corner): ' + f1(m.video.d) + ' − ' +
+          f1(m.video.c) + ' = ' + f1(m.video.a) + ' → ' + fr + f2(m.video.value) + ', ' + f2(Math.abs(m.video.value - A0)) + ' diamond from the app’s aim.</p>';
+      line1 = 'In your head: gap ' + f2(m.gap) + ' ÷ 2 = ' + f2(m.gap / 2) + ' in from the ' + pk + ' → <b>' + fr + f2(k ? adj : ruleAim) + '</b>' + (k ? ' (your table)' : '');
     } else {
       h = '<h3>In your head</h3><p>' + (m.adjacent
         ? 'Two cushions next to each other: the ball comes back parallel to the line it went in on. There is no add-or-subtract rule for this route. Use the aim points.'

@@ -392,7 +392,8 @@ td:first-child { white-space: nowrap; }
 
   <!-- ============ 6 ============ -->
   <h2 id="math"><span class="n">6</span>Do the math in your head</h2>
-  <p>At the table you do not have the app in your hand. These rules give the same numbers with simple arithmetic. The app shows the rule for each route in the dashed box under the result, with your numbers filled in, for example <code>In your head (from R): 7.0 − 2×2.0 = 3.0 → B5.0</code>.</p>
+  <p>At the table you do not have the app in your hand. These rules give the same numbers with simple arithmetic. The app shows the rule for each route in the dashed box under the result, with your numbers filled in, for example <code>In your head: gap 5.00 ÷ 2 = 2.50 in from the top-right pocket → T5.50</code>.</p>
+  <p>The two-rail and three-rail rules work the same way: <b>find a gap, halve it, count that far in from a corner pocket</b>.</p>
 
   <h3>One cushion: the weighted average</h3>
   <p>Measure two things for the ball and for the target (the pocket, or the ball you want to hit):</p>
@@ -422,10 +423,12 @@ td:first-child { white-space: nowrap; }
   <h3>Rule 2: around the corner (three cushions)</h3>
   <p>Use it when the ball goes long rail, short rail, long rail, for example top, right, bottom. This is the usual way out of a safety at the far end of the table.</p>
   <ol class="steps">
-    <li><b>Count from the short rail you go around.</b> If you go around the right rail, every long-rail number n becomes 8 − n. B1 becomes 7, T6 becomes 2, B5 becomes 3. Around the left rail, the numbers stay as they are.</li>
-    <li><b>Land = Start − 2 × Aim.</b></li>
-    <li><b>To hit a spot, turn it round: Aim = (Start − Land) ÷ 2.</b></li>
+    <li><b>Find the start S</b> on your rail (sight the shot line back past the ball, as above) and the spot where you want the ball to land on the same rail.</li>
+    <li><b>Gap:</b> count the diamonds between S and the landing spot.</li>
+    <li><b>Halve it.</b></li>
+    <li><b>Count in.</b> Go to the corner pocket on the far rail at the end you go around. Count that many diamonds in toward the middle. That is your aim.</li>
   </ol>
+  <p><b>Sliding a memorised shot.</b> Move the start one diamond and the aim moves half a diamond the same way. So if you know one shot from a corner on your table, you can slide it along instead of finding a new spot on the wall.</p>
 
   <figure>
     <svg viewBox="0 0 1000 640" role="img" aria-label="Around the corner example. Start S at B1. Aim at T6. The ball goes to R2.4, then lands at B5. Counted from the right rail: start 7, aim 2, land 7 minus 4 equals 3.">
@@ -460,23 +463,24 @@ td:first-child { white-space: nowrap; }
       <rect x="128" y="440" width="114" height="42" rx="21" fill="var(--room)" stroke="var(--pearl)" stroke-width="2" stroke-dasharray="5 4"/>
       <text x="185" y="470" fill="var(--pearl)" font-size="27" text-anchor="middle">S 1.0</text>
     </svg>
-    <figcaption>Start S = B1. Aim T6. Counted from the right rail (orange numbers): start 7, aim 2. Land = 7 − 2 × 2 = 3, which is B5. The other way round: to land on B5 (3) from start 7, aim = (7 − 3) ÷ 2 = 2, which is T6.</figcaption>
+    <figcaption>Start S = B1, land at B5. Gap 4, half 2. From the top-right pocket count 2 in: aim T6. (Orange numbers: the same counts from the right rail.)</figcaption>
   </figure>
 
-  <h3>Rule 3: count and subtract (two cushions around a corner)</h3>
+  <h3>Rule 3: two cushions around a corner</h3>
   <p>Use it when both balls are along the same long rail and the ball goes to the far long rail, then the short rail, and comes back to the target. For example: cue ball and object ball along the bottom rail, kick top then right.</p>
   <ol class="steps">
-    <li><b>Count from the short rail you go around.</b> Along your rail, that corner is 0. Count to the cue ball (b) and to the target (t).</li>
-    <li><b>Subtract:</b> b − t.</li>
-    <li><b>Halve it.</b> Aim that many diamonds from the same corner, on the far rail.</li>
+    <li><b>Gap:</b> count the diamonds between the cue ball and the target.</li>
+    <li><b>Halve it.</b></li>
+    <li><b>Count in.</b> Go to the corner pocket on the far rail at the target's end. Count that many diamonds in toward the middle. That is your aim.</li>
   </ol>
-  <p><b>Example.</b> Going around the right rail. The cue ball is 6 diamonds from the right corner, the object ball is 1. 6 − 1 = 5. Half is 2.5. Aim 2.5 diamonds from the right corner on the top rail, which is <code>T5.5</code>.</p>
+  <p><b>Example.</b> Cue ball at B2, object ball at B7, kick top then right. Gap 5, half 2.5. From the top-right pocket count 2.5 in: aim <code>T5.5</code>. With the object ball at B6 instead: gap 4, half 2, aim <code>T6</code>.</p>
   <p>Where the cue ball sits does not change the answer: only the gap between the two balls counts. The rule is exact when both balls are the same distance off the rail. If one is much further out, the app says so; use its aim point.</p>
   <p><b>The "distance minus cue number" system.</b> Some players count the cue ball from the far corner (c) and the gap to the target (d), and aim at d − c. The app shows that number too. It matches this rule only when the gap is twice the cue number; elsewhere it can be half a diamond off, which players make up with spin and speed. On your own table, see which one your shots follow.</p>
 
   <div class="box warn">
     <h3>What these rules do not include</h3>
-    <p>The rules follow the centre of a point-sized ball. With a real ball the app's numbers move by up to about 0.3 diamond, and the app tells you the difference. Speed and spin move the ball more than that. On your own table, note how far the ball lands from the rule, for example "Rule 2 lands half a diamond short". That one correction then works for every shot of that type on that table.</p>
+    <p>The rules follow the centre of a point-sized ball. With a real ball the app's numbers move by up to about 0.3 diamond, and the app tells you the difference. Speed and spin move the ball more than that.</p>
+    <p><b>Your table.</b> Set up a reference shot in the app (for example your three-rail table test from a corner), shoot it at the app's aim with your usual speed and English, and type the diamond where the ball really landed into <b>My table</b> under the rule. The app saves the difference for Rule 2 and Rule 3 separately and shows <b>Your table: aim …</b> for every later shot of that type. Moving the aim half a diamond moves the landing one diamond, so the app moves your aim by half the error. Tap Clear to remove it.</p>
   </div>
 
   <!-- ============ 7 ============ -->

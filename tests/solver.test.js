@@ -237,6 +237,18 @@ test('count and halve works mirrored (T, L) and is off when the balls are not eq
   const r1 = CB.headMath(CB.solveKick({ cue: cue(2, 0.5), object: obj(7, 0.5), rails: ['T', 'R'], cfg }));
   assert.ok(Math.abs(r1.predicted - r1.actual) < 0.3, 'real ball within 0.3: ' + r1.predicted + ' vs ' + r1.actual);
 });
+test('table offset: a run-long table shifts the aim by half the landing error', () => {
+  const s = CB.solveKick({ cue: cue(2.25, 1), object: obj(3.75, 1), rails: ['T', 'R', 'B'], cfg, pointMode: true });
+  const m = CB.headMath(s);                       // aim T6, lands B5 (3 from R)
+  assert.strictEqual(m.pocket.id, 'TR'); near(m.gap, 4, 1e-9);
+  const k = CB.calibrate(m, 4);                   // ball really reached B4 = 4 from R
+  near(k, 1, 1e-9);
+  near(CB.tableAim(m, k), 5.5, 1e-9);            // aim half a diamond further from R
+  near(CB.tableAim(m, 0), 6, 1e-9);
+  const c = CB.headMath(CB.solveKick({ cue: cue(2, 0.5), object: obj(7, 0.5), rails: ['T', 'R'], cfg, pointMode: true }));
+  assert.strictEqual(c.pocket.id, 'TR');
+  near(CB.calibrate(c, 7), 0, 1e-9); near(CB.tableAim(c, CB.calibrate(c, 6.5)), 5.25, 1e-9);
+});
 test('equal steps: S=0.5, aim T2.5 gives B4.5 then T6.5', () => {
   const s = CB.solveKick({ cue: cue(1, 1), object: obj(7, 3), rails: ['T', 'B', 'T'], cfg, pointMode: true });
   assert.ok(s.valid, s.errors.join('; '));
