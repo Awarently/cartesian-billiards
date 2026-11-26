@@ -388,6 +388,24 @@
         '<p class="note">To hit a spot: Aim = (Start − Land) ÷ 2, all counted from the ' + cn + ' rail.</p>' +
         diffNote(m.predicted, m.actual, m.landRail);
       line1 = 'In your head (from ' + m.corner + '): ' + f1(m.s) + ' − 2×' + f1(m.a) + ' = ' + f1(m.l) + ' → <b>' + m.landRail + f1(m.predicted) + '</b>';
+    } else if (m.rule === 'count') {
+      var cr = CB.RAILS[m.corner].name, nr = CB.RAILS[m.nearRail].name, fr2 = m.firstRail;
+      var ball = sol.shotType === 'bank' ? 'Object ball' : 'Cue ball';
+      var targ = sol.shotType === 'bank' ? 'Pocket' : sol.shotType === 'kick-pocket' ? 'Ghost ball' : 'Object ball';
+      h = '<h3>In your head · count and subtract</h3>' +
+        '<p>Count along the ' + nr + ' rail, starting at the ' + cr + ' rail (that corner is 0).</p>' +
+        '<p class="eq">' + ball + ': ' + f1(m.b) + ' · ' + targ + ': ' + f1(m.t) + '</p>' +
+        '<p class="eq">Subtract: ' + f1(m.b) + ' − ' + f1(m.t) + ' = ' + f1(m.gap) + '</p>' +
+        '<p class="eq">Halve: ' + f1(m.gap) + ' ÷ 2 = ' + f2(m.a) + ' → aim ' + f2(m.a) + ' from the ' + cr + ' rail on the ' +
+        CB.RAILS[fr2].name + ' rail = <b>' + fr2 + f2(m.predicted) + '</b></p>' +
+        (Math.abs(m.hb - m.ht) > 0.25
+          ? '<p class="note">The rule is exact only when both balls are the same distance from the ' + nr + ' rail. Here they are ' +
+            f1(m.hb) + ' and ' + f1(m.ht) + ' diamond out, so trust the aim point.</p>' : '') +
+        diffNote(m.predicted, m.actual, fr2) +
+        '<p class="note">Video system (count from the far corner, distance minus cue number): ' + f1(m.video.d) + ' − ' +
+        f1(m.video.c) + ' = ' + f1(m.video.a) + ' → ' + fr2 + f2(m.video.value) + '. That is ' +
+        f2(Math.abs(m.video.value - m.actual)) + ' diamond from the app’s aim point.</p>';
+      line1 = 'In your head: (' + f1(m.b) + ' − ' + f1(m.t) + ') ÷ 2 = ' + f1(m.a) + ' from ' + m.corner + ' → <b>' + fr2 + f2(m.predicted) + '</b>';
     } else {
       h = '<h3>In your head</h3><p>' + (m.adjacent
         ? 'Two cushions next to each other: the ball comes back parallel to the line it went in on. There is no add-or-subtract rule for this route. Use the aim points.'
