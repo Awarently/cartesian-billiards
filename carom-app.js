@@ -20,7 +20,7 @@
     };
   }
   var state = defaults(), cfg = CC.caromConfig(state.table);
-  var view = null, vbW = 0, vbH = 0, sols = [], counts = { 3: 0, 4: 0 }, current = null;
+  var view = null, vbW = 0, vbH = 0, sols = [], counts = { 3: 0, 4: 0 }, bestScore = { 3: null, 4: null }, current = null;
   var drag = null, frame = 0, undoStack = [], redoStack = [], saved = '';
 
   /* ---------- state ---------- */
@@ -87,7 +87,8 @@
     [3, 4].forEach(function (n) {
       if (!all && n !== state.cushions) return;
       var list = CC.solveCarom(req, n, opts);
-      counts[n] = list.filter(function (s) { return s.valid; }).length;
+      var ok = list.filter(function (s) { return s.valid; });
+      counts[n] = ok.length; bestScore[n] = ok.length ? ok[0].difficultyScore : null;
       if (n === state.cushions) sols = list;
     });
     var valid = sols.filter(function (s) { return s.valid; });
@@ -209,6 +210,11 @@
   function f2(v) { return CB.fmt(v, 2); }
   function pt(p) { return '(' + f2(p.x) + ', ' + f2(p.y) + ')'; }
   var FAMILY = { 'ball-first': 'Ball first', 'rail-first': 'Rail first', 'mixed': 'Mixed' };
+  /* "Ball first", "1 cushion first", "Rail first" ... */
+  function famText(s) {
+    if (s.family !== 'mixed') return FAMILY[s.family];
+    return s.seq1.length + (s.seq1.length === 1 ? ' cushion' : ' cushions') + ' first';
+  }
   function hitText(s) { return CC.thicknessText(s.thickness) + (s.thickness > 0.97 ? '' : ' on the ' + s.hitSide); }
 
   /* Events in order: cushions, first ball, cushions, second ball. */
@@ -255,8 +261,12 @@
       status.className = 'status ' + (sol.warnings.length ? 'warn' : 'ok');
       status.textContent = sol.warnings.length ? 'Caution' : sol.difficulty;
       sub.className = 'sub';
-      sub.textContent = FAMILY[sol.family] + ' · ' + hitText(sol) + ' · aim tolerance ±' + f2(sol.tolerance) + '°';
+      sub.textContent = famText(sol) + ' · ' + hitText(sol) + ' · ' + sol.speedCategory.toLowerCase() + ' speed · aim ±' + f2(sol.tolerance) + '°';
       if (sol.warnings.length) sub.textContent = sol.warnings[0];
+      var other = state.cushions === 3 ? 4 : 3;
+      if (bestScore[other] !== null && bestScore[other] + 2 < sol.difficultyScore) {
+        sub.textContent += ' \u00b7 ' + other + ' cushions has an easier route';
+      }
       var ev = events(sol), parts = [], cue = NAMES[state.cue].toLowerCase(), i;
       var firstRails = ev.slice(0, sol.seq1.length).map(function (e) { return '<b>' + e.c.label + '</b>'; });
       var lateRails = ev.slice(sol.seq1.length + 1, -1).map(function (e) { return '<b>' + e.c.label + '</b>'; });
@@ -268,7 +278,7 @@
         parts.push(hit.replace('Hit', 'It hits'));
         parts.push(lateRails.length ? 'Then ' + lateRails.join(', then ') + ' and the ' + sol.secondName.toLowerCase() + '.' : 'It goes on to the ' + sol.secondName.toLowerCase() + '.');
       }
-      parts.push('Ghost ball ' + pt(sol.ghost) + '.');
+      parts.push('Speed: ' + sol.speedCategory.toLowerCase() + '.', 'Ghost ball ' + pt(sol.ghost) + '.');
       if (sol.warnings.length) parts.push(esc(sol.warnings.join('. ')) + '.');
       instr.innerHTML = parts.join(' ');
     } else {
@@ -283,7 +293,7 @@
     row('Cue ball', NAMES[state.cue] + ' ' + pt(state.balls[state.cue]));
     objIds().forEach(function (k) { row(NAMES[k], pt(state.balls[k])); });
     if (sol) {
-      row('Shot', FAMILY[sol.family] + ', ' + sol.railSequence.length + ' cushions, ' + sol.firstName.toLowerCase() + ' first', 'plain');
+      row('Shot', famText(sol) + ', ' + sol.railSequence.length + ' cushions in all, ' + sol.firstName.toLowerCase() + ' first', 'plain');
       events(sol).forEach(function (e, k) {
         if (e.kind === 'rail') row('Cushion ' + (sol.cushionContacts.indexOf(e.c) + 1), '<span class="mk">' + e.c.label + '</span>' + (state.pointMode ? '' : ' · ball contact ' + e.c.contactLabel));
         else if (!e.last) row(e.name, 'hit ' + esc(hitText(sol)));
@@ -293,6 +303,7 @@
       row('Cue ball turns', Math.round(sol.deflection) + '° off its line (' + (state.model === 'roll' ? 'natural roll' : 'stun') + ')');
       row('Speed kept', Math.round(sol.exitSpeed * 100) + '% of the speed at the hit', 'plain');
       row('Aim tolerance', '±' + f2(sol.tolerance) + '° still reaches the ' + sol.secondName.toLowerCase() + ' (ideal line)', 'plain');
+      row('Speed needed', sol.speedCategory + ', about ' + f1(sol.speedNeeded) + ' m/s off the tip (estimate; every cushion and the first-ball hit cost speed)', sol.speedNeeded > CC.SPEED.max ? 'warn' : 'plain');
       row('Cue travel', f2(sol.travel) + ' diamonds, ' + Math.round(sol.travel * cfg.unitMm / 10) + ' cm');
       row('Difficulty', sol.difficulty + ' (heuristic score ' + f1(sol.difficultyScore) + ', not a make percentage)', 'plain');
       sol.warnings.forEach(function (w) { row('Caution', esc(w), 'warn'); });
