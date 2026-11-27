@@ -338,6 +338,16 @@
     /* aim tolerance in degrees: the finish stays within one ball width of B's centre */
     sol.tolerance = sol.sensitivity > 1e-6 ? 0.5 * (2 * r) / sol.sensitivity : 9;
 
+    /* speed needed off the tip; every cushion and the first-ball hit cost speed */
+    var sp = speedBudget(sol.cuePath, sol.seq1.length + 1, df.speed, req.cfg);
+    sol.speedNeeded = sp.need;
+    sol.speedAtFirstBall = sp.atFirst;
+    sol.speedCategory = speedCategory(sp.need);
+    if (sp.need > SPEED.max) {
+      sol.valid = false;
+      sol.errors.push('Needs about ' + sp.need.toFixed(1) + ' m/s off the tip: too much speed to control');
+    }
+
     return sol;
   }
 
@@ -372,17 +382,56 @@
   }
 
   /*
-   * Heuristic difficulty. Lower is easier. Not a probability.
-   *   travel in diamonds, +1 per cushion over three, cut cost, aim
-   *   sensitivity (diamonds the finish moves per half degree) x 4,
-   *   +1.5 per warning.
+   * Speed model (estimate). Works backward from the second ball:
+   *   rolling        v^2 += 2 * mu * g * L   (L in metres)
+   *   each cushion   divide by sqrt((slide * along)^2 + (bounce * into)^2)
+   *   first ball     divide by the share of speed the cue ball keeps
+   * Ignores the sliding phase after the hit and side spin, so the real
+   * speed is higher. Use it to compare routes, not as a measurement.
    */
+  var SPEED = { rolling: 0.008, cushionBounce: 0.8, cushionSlide: 0.95, arrive: 0.3, g: 9.81, max: 7.5 };
+  function speedBudget(path, hitIndex, keep, cfg) {
+    var v2 = SPEED.arrive * SPEED.arrive, m = cfg.unitMm / 1000, atFirst = null;
+    for (var i = path.length - 1; i >= 1; i--) {
+      v2 += 2 * SPEED.rolling * SPEED.g * dist(path[i - 1], path[i]) * m;
+      if (i - 1 === hitIndex) { /* nothing: cushion handling below */ }
+      if (i - 1 === 0) break;
+      var a = unit(sub(path[i - 1], path[i - 2])), b = unit(sub(path[i], path[i - 1]));
+      if (i - 1 === hitIndex) {
+        atFirst = Math.sqrt(v2) / Math.max(keep, 0.05);
+        v2 = atFirst * atFirst;
+        continue;
+      }
+      /* cushion at path[i-1]: the component along the rail keeps more speed than the part into it */
+      var along = Math.abs(a.x * b.x + a.y * b.y) > 0.999 ? 1 : (Math.abs(a.x - b.x) < 1e-9 ? Math.abs(a.x) : Math.abs(a.y));
+      var into = Math.sqrt(Math.max(0, 1 - along * along));
+      var f = Math.sqrt(Math.pow(SPEED.cushionSlide * along, 2) + Math.pow(SPEED.cushionBounce * into, 2));
+      v2 /= f * f;
+    }
+    return { need: Math.sqrt(v2), atFirst: atFirst };
+  }
+  function speedCategory(v) { return v <= 2 ? 'Soft' : v <= 4 ? 'Medium' : v <= 6 ? 'Firm' : v <= SPEED.max ? 'Hard' : 'Not playable'; }
+
+  /*
+   * Heuristic difficulty. Lower is easier. Not a probability.
+   *   travel in diamonds
+   *   +1 per cushion over three
+   *   cushions before the first ball: +1.5 for one, +4 for each one after
+   *      that (players go to the first ball direct or off one cushion;
+   *      more cushions there only waste speed)
+   *   cut cost, aim sensitivity x 4, speed above 3 m/s x 1.5
+   *   +5 per kiss warning, +1.5 per other warning
+   */
+  function preBall(k) { return k <= 1 ? 1.5 * k : 1.5 + 4 * (k - 1); }
   function score(s) {
     var cut = s.alpha, cutCost = cut <= 50 ? 0 : (cut - 50) / 8;
     if (s.model === 'stun' && cut < 25) cutCost += (25 - cut) / 6;
-    return s.travel + (s.railSequence.length - 3) + cutCost + 4 * Math.min(s.sensitivity, 3) + 1.5 * s.warnings.length;
+    var kiss = s.kiss ? 1 : 0;
+    return s.travel + (s.railSequence.length - 3) + preBall(s.seq1.length) + cutCost +
+      4 * Math.min(s.sensitivity, 3) + 1.5 * Math.max(0, s.speedNeeded - 3) +
+      5 * kiss + 1.5 * (s.warnings.length - kiss);
   }
-  function difficulty(v) { return v < 14 ? 'Easy' : v < 19 ? 'Moderate' : v < 25 ? 'Difficult' : 'Advanced'; }
+  function difficulty(v) { return v < 15 ? 'Easy' : v < 20 ? 'Moderate' : v < 26 ? 'Difficult' : 'Advanced'; }
 
   /*
    * All routes with exactly `cushions` contacts before the second ball,
@@ -439,6 +488,6 @@
   return {
     TABLES: TABLES, caromConfig: caromConfig, deflect: deflect, deflectionDeg: deflectionDeg,
     solveCarom: solveCarom, playForward: playForward, score: score, difficulty: difficulty,
-    thicknessText: thicknessText, breakLayout: breakLayout
+    thicknessText: thicknessText, breakLayout: breakLayout, speedBudget: speedBudget, speedCategory: speedCategory, SPEED: SPEED
   };
 });

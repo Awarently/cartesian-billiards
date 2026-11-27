@@ -137,6 +137,29 @@ test('UMB break: red-first ball-first three-cushion routes exist (roll)', () => 
   const s = CC.solveCarom(rq, 3).filter(x => x.valid && x.firstName === 'Red' && x.family === 'ball-first');
   assert.ok(s.length > 0);
 });
+test('wasted cushions before the first ball rank low (Gary layout 2026-11-27)', () => {
+  /* yellow cue far left; white and red almost in line in the middle */
+  const rq = { cue: { x: 0.46, y: 2.56 }, cfg, model: 'roll',
+    balls: [{ id: 'white', name: 'White', x: 4.70, y: 2.24 }, { id: 'red', name: 'Red', x: 5.63, y: 2.21 }] };
+  const three = CC.solveCarom(rq, 3).filter(s => s.valid);
+  assert.ok(three[0].seq1.length <= 1, 'best route goes direct or off one cushion');
+  const four = CC.solveCarom(rq, 4).filter(s => s.valid);
+  /* the screenshot route: T > B > White > T > R > Red, with a kiss */
+  const shot = four.findIndex(s => s.seq1.join('') === 'TB' && s.seq2.join('') === 'TR' && s.firstName === 'White');
+  assert.ok(shot >= 4, 'screenshot route ranked ' + shot);
+  assert.ok(four[0].seq1.length <= 1);
+  assert.ok(four[0].difficultyScore > three[0].difficultyScore);
+});
+test('speed estimate: more cushions and the first-ball hit need more speed', () => {
+  const straight = [{ x: 1, y: 2 }, { x: 7, y: 2 }];
+  const banked = [{ x: 1, y: 2 }, { x: 4, y: 4 - r }, { x: 7, y: 2 }];
+  const v0 = CC.speedBudget(straight, 99, 1, cfg).need, v1 = CC.speedBudget(banked, 99, 1, cfg).need;
+  assert.ok(v1 > v0);
+  const hit = CC.speedBudget(straight.slice(0, 1).concat([{ x: 4, y: 2 }], straight.slice(1)), 1, 0.5, cfg);
+  assert.ok(hit.need > v0 * 1.5, 'half speed kept at the hit');
+  assert.strictEqual(CC.speedCategory(1.5), 'Soft');
+  assert.strictEqual(CC.speedCategory(9), 'Not playable');
+});
 test('hit thickness in eighths', () => {
   assert.strictEqual(CC.thicknessText(0.5), '1/2 ball');
   assert.strictEqual(CC.thicknessText(0.76), '3/4 ball');

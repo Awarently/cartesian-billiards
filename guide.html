@@ -552,6 +552,14 @@ td:first-child { white-space: nowrap; }
     <li><b>Select the hit:</b> <i>Roll</i> or <i>Stun</i>. This sets which way the cue ball goes after it hits the first ball (see below).</li>
     <li><b>Read the route.</b> Cushion aim points show in order, for example <code>B0.56 → L0.88 → T2.62 → Yellow → Red</code>. The line under it shows the shot type, how thick to hit the first ball (in eighths of a ball, and which side), and the aim tolerance.</li>
   </ol>
+  <h3>Game mode: follow a real game</h3>
+  <ol class="steps">
+    <li><b>Tap Game</b> at the top. The balls go to the start position and white shoots first.</li>
+    <li><b>Shoot on your table</b>, using the route on the screen if you want it.</li>
+    <li><b>Tap Made it or Missed.</b> Made it: same player, the run goes up. Missed: the turn goes to the other ball.</li>
+    <li><b>Drag the three balls to where they stopped.</b> The route for the next shot updates as you move them.</li>
+  </ol>
+  <p>The score line shows points, average (points per inning) and high run for each player. <i>Undo</i> takes back the last Made it or Missed, including the ball positions. <i>New</i> starts a new game. Tap <i>Game</i> again to leave; the score stays until you start a new game. To see the table long side up (red at the top on a phone), use <i>Rotate table</i>.</p>
   <h3>How the cue ball leaves the first ball</h3>
   <ul>
     <li><b>Roll</b> (natural roll at impact): the cue ball ends up about 30 to 34 degrees off its aim line for any hit from 1/4 to 3/4 ball. This is the 30-degree rule. The short curve before the ball settles on that line is not drawn.</li>
@@ -561,7 +569,9 @@ td:first-child { white-space: nowrap; }
   <ul>
     <li><b>Aim tolerance</b>: how many degrees the first aim can be off and still reach the second ball on the ideal line. Bigger is easier.</li>
     <li><b>Kiss</b>: the app follows the first ball along its line (constant speed, up to four cushions) and warns when it meets the cue ball again or reaches the second ball first.</li>
-    <li><b>Difficulty</b>: a heuristic from travel, extra cushions, cut angle, aim tolerance and warnings. It is not a make percentage.</li>
+    <li><b>Speed</b>: Soft, Medium, Firm or Hard, worked back from the second ball. Every cushion and the hit on the first ball cost speed. Routes that need more than about 7.5 m/s are not listed. It is an estimate for comparing routes.</li>
+    <li><b>Difficulty</b>: a heuristic from travel, extra cushions, cushions before the first ball, cut angle, aim tolerance, speed and warnings. It is not a make percentage. Going to the first ball direct or off one cushion costs little; each extra cushion before the first ball costs a lot, because a player would not spend speed there.</li>
+    <li>When the other cushion count has a clearly easier route, the line under the route says so.</li>
     <li>The dashed yellow line is the first ball's path. Turn it off with <i>First-ball path</i>.</li>
   </ul>
   <p>Limits: ideal geometry. No side spin (running or reverse English), throw, cushion compression or speed. Real three-cushion play uses a lot of side spin, so real routes run longer or shorter than these lines. Use the numbers as a reference line, then adjust for your table.</p>
