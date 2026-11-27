@@ -6,6 +6,15 @@ A bank and kick shot calculator for pool. Place the balls, tap a pocket, and the
 
 Bank, kick and kick-to-pocket shots off 1, 2 or 3 cushions, with every valid route listed and ranked. Ghost ball, cut angle, obstruction check. Each route also shows a rule you can do in your head (weighted average, equal steps, around the corner), and a kick drill trains you to use them. Installable on iPhone, iPad and Android. Works offline after the first load.
 
+## Three-cushion (carom)
+
+`carom.html` is a three-cushion page on the same coordinate system (10 ft match table 2.84 x 1.42 m, or 9 ft; 61.5 mm balls). Place white, yellow and red anywhere; the app lists every route where the cue ball touches both balls with at least three cushions (3 or 4) before the second ball: ball first, rail first, and mixed.
+
+- Solver: `carom.js` (no DOM, uses `solver.js`). Cushions by the mirror method. After the first ball the cue ball follows a hit model: **roll** (final direction = 5/7 tangent + 2/7 impact velocity, about 34 degrees at a half-ball hit) or **stun** (tangent line). The unknown is the ghost-ball position on the circle of radius 2r around the first ball; the solver scans it, refines roots by bisection, then replays each route forward and keeps only routes that score.
+- Each route gives cushion aim points, hit thickness (eighths) and side, cut angle, aim tolerance (degrees of aim error that still reach the second ball), a timed kiss check, and a heuristic difficulty.
+- Ideal geometry only: no side spin, throw, cushion compression or speed.
+- Tests: `tests/carom.test.js`.
+
 ## User guide
 
 The step-by-step guide, including how the numbers work, is inside the app: tap **Guide** at the top right, or open [guide.html](https://awarently.github.io/cartesian-billiards/guide.html). It is cached for offline use.

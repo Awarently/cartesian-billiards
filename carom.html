@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartesian Billiards · Three-cushion</title>
+<meta name="theme-color" content="#14110e">
+<meta name="description" content="Three-cushion carom routes using one Cartesian diamond system.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Billiards">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="carom">
+<div class="app" id="app">
+
+  <header class="bar">
+    <div class="brand">
+      <span class="brand-name">Three-cushion</span>
+      <span class="brand-tag">Every position has a number.</span>
+    </div>
+    <div class="bar-right">
+      <span class="badge" id="model-badge">Ideal geometry</span>
+      <a class="guide-link" href="index.html">Pool</a>
+      <a class="guide-link" href="guide.html#carom">Guide</a>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg id="table" role="img" aria-label="Carom table. Drag a ball to move it.">
+      <g id="g-static"></g>
+      <g id="g-dyn"></g>
+    </svg>
+    <div class="hud" id="hud" hidden></div>
+  </main>
+
+  <section class="panel" id="panel" aria-label="Shot solution">
+    <div class="quick">
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Cue ball">
+          <button type="button" id="cue-white" aria-pressed="true">White</button>
+          <button type="button" id="cue-yellow" aria-pressed="false">Yellow</button>
+        </div>
+        <div class="cushions" role="group" aria-label="Number of cushions">
+          <span class="cush-label" aria-hidden="true">Cushions</span>
+          <button type="button" class="cush" id="cush-3" aria-label="3 cushions">3<span class="cnt" id="cnt-3"></span></button>
+          <button type="button" class="cush" id="cush-4" aria-label="4 cushions">4<span class="cnt" id="cnt-4"></span></button>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="seg seg-small" role="group" aria-label="Shot family">
+          <button type="button" data-family="all" aria-pressed="true">All</button>
+          <button type="button" data-family="ball-first" aria-pressed="false">Ball first</button>
+          <button type="button" data-family="rail-first" aria-pressed="false">Rail first</button>
+          <button type="button" data-family="mixed" aria-pressed="false">Mixed</button>
+        </div>
+        <div class="seg seg-small" role="group" aria-label="Hit">
+          <button type="button" id="hit-roll" aria-pressed="true">Roll</button>
+          <button type="button" id="hit-stun" aria-pressed="false">Stun</button>
+        </div>
+      </div>
+
+      <div class="routes" id="routes" role="group" aria-label="Routes"></div>
+
+      <div class="route" id="route" aria-live="polite"></div>
+      <div class="subrow">
+        <span class="sub" id="sub"></span>
+        <span class="status" id="status"></span>
+      </div>
+
+      <button type="button" class="more-toggle" id="more-toggle" aria-expanded="false" aria-controls="more">
+        <span id="more-label">Show numbers and options</span>
+      </button>
+    </div>
+
+    <div class="more" id="more">
+      <p class="instruction" id="instruction"></p>
+      <h2>Numbers</h2>
+      <dl class="facts" id="facts"></dl>
+
+      <h2>Ball positions</h2>
+      <div class="positions" id="positions"></div>
+
+      <div class="actions">
+        <button type="button" id="act-undo">Undo</button>
+        <button type="button" id="act-redo">Redo</button>
+        <button type="button" id="act-break">Start position</button>
+        <button type="button" id="act-reset">Reset table</button>
+      </div>
+
+      <h2>Display</h2>
+      <div class="options">
+        <label class="opt"><input type="checkbox" id="opt-grid"><span>Grid</span></label>
+        <label class="opt"><input type="checkbox" id="opt-numbers"><span>Diamond numbers</span></label>
+        <label class="opt"><input type="checkbox" id="opt-ghost"><span>Ghost ball</span></label>
+        <label class="opt"><input type="checkbox" id="opt-path"><span>Trajectory</span></label>
+        <label class="opt"><input type="checkbox" id="opt-object"><span>First-ball path</span></label>
+        <label class="opt"><input type="checkbox" id="opt-ball"><span>Real ball size</span></label>
+        <button type="button" class="opt-btn" id="opt-rotate">Rotate table</button>
+        <label class="opt-select" for="opt-table"><span>Table</span>
+          <select id="opt-table">
+            <option value="10">10 ft match (2.84 x 1.42 m)</option>
+            <option value="9">9 ft (2.54 x 1.27 m)</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="note">
+        Ideal geometry. Cushions reflect at equal angles. After the first ball the cue ball follows the hit model:
+        Roll uses the natural-roll rule (about 34 degrees off the aim line at a half-ball hit, the "30-degree rule");
+        Stun uses the tangent line (90 degrees to the line of centres). No side spin, throw, cushion compression or speed.
+        Real tables play shorter or longer. Use the numbers as a starting reference.
+      </p>
+    </div>
+  </section>
+</div>
+
+<script src="solver.js"></script>
+<script src="carom.js"></script>
+<script src="carom-app.js"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (hadController && !reloaded) { reloaded = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache is optional */ });
+  }
+</script>
+</body>
+</html>

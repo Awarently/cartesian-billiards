@@ -428,6 +428,7 @@
     var path = solvePath(req.cue, target, seq, inset);
     if (!path.ok) return fail(sol, path.reason);
     sol.cushionContacts = path.contacts;
+    sol.aimTarget = target;
     checkContacts(sol, path.contacts, cfg);
 
     var pts = path.points.slice(), n = pts.length;
@@ -627,6 +628,9 @@
     }
 
     var opp = OPPOSITE[seq[0]];
+
+    if (n === 2 && seq[1] !== opp && seq[1] !== seq[0]) return countRule(sol, path, seq, A);
+
     var back = intersect(p0, c[0].center, opp, 0);
     if (!back) return null;
     var S = along(opp, back.point);
@@ -644,11 +648,65 @@
       var corner = seq[1];
       var s = fromCorner(corner, S), a = fromCorner(corner, A), l = s - 2 * a;
       return {
-        rule: 'corner', start: start, corner: corner, S: S, A: A, s: s, a: a, l: l,
+        rule: 'corner', start: start, corner: corner, S: S, A: A, s: s, a: a, l: l, gap: s - l,
+        firstRail: seq[0], pocket: cornerPocket(seq[0], corner), landCount: l,
         landRail: seq[2], predicted: fromCorner(corner, l), actual: c[2].aimCoord
       };
     }
     return { rule: null, start: start, adjacent: n === 2 };
+  }
+
+  /*
+   * Rule 'count': 2 cushions that meet at a corner (far rail, then the short
+   * rail), with the ball and target along the near rail.
+   * Count both along the near rail from the corner cushion: ball b, target t.
+   *   Gap = b - t.  Aim (on the far rail, counted from the same corner) = Gap / 2.
+   * Exact for a point ball when ball and target are the same distance from the
+   * near rail. Also returns the "d - c" diamond system some players use
+   * (aim = gap - ball's count from the far corner), for comparison only.
+   */
+  function countRule(sol, path, seq, A) {
+    var first = RAILS[seq[0]], near = OPPOSITE[seq[0]], corner = seq[1];
+    var ax = first.axis === 'y' ? 'x' : 'y', cross = first.axis;
+    var p0 = path[0], target = sol.aimTarget || path[path.length - 1];
+    var b = fromCorner(corner, p0[ax]), t = fromCorner(corner, target[ax]);
+    var nearV = RAILS[near].value;
+    var hb = Math.abs(p0[cross] - nearV), ht = Math.abs(target[cross] - nearV);
+    var gap = b - t, a = gap / 2;
+    var L = first.length, c = L - b, va = gap - c;
+    return {
+      rule: 'count', start: null, firstRail: seq[0], nearRail: near, landRail: near, corner: corner,
+      pocket: cornerPocket(seq[0], corner), landCount: t,
+      b: b, t: t, gap: gap, a: a, hb: hb, ht: ht, railLength: L,
+      predicted: fromCorner(corner, a), actual: A,
+      video: { c: c, d: gap, a: va, value: fromCorner(corner, va) }
+    };
+  }
+
+  /* The corner pocket where two cushions meet. */
+  function cornerPocket(r1, r2) {
+    for (var i = 0; i < POCKETS.length; i++) {
+      var pr = POCKETS[i].rails;
+      if (pr.length === 2 && pr.indexOf(r1) >= 0 && pr.indexOf(r2) >= 0) return POCKETS[i];
+    }
+    return null;
+  }
+
+  /*
+   * Table offset for the subtract-and-halve rules ('corner' and 'count').
+   * k = where the ball really reached the landing rail minus where the rule says,
+   * both counted from the corner cushion. A real table then needs
+   * aim = rule aim + k / 2 (moving the aim half a diamond moves the landing one).
+   *   calibrate(m, observed, aimShot): observed is the printed rail number where the ball landed
+   *     when shot at the printed aim aimShot (default: the rule's own aim).
+   *   tableAim(m, k): printed aim number on the first rail for this table.
+   */
+  function calibrate(m, observed, aimShot) {
+    var a = aimShot === undefined || aimShot === null ? m.a : fromCorner(m.corner, aimShot);
+    return fromCorner(m.corner, observed) - ((m.rule === 'count' ? m.b : m.s) - 2 * a);
+  }
+  function tableAim(m, k) {
+    return fromCorner(m.corner, m.a + (k || 0) / 2);
   }
 
   /* Plain-language position on a rail, relative to the nearest half diamond. */
