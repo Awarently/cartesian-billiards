@@ -728,7 +728,7 @@
     ghostBall: ghostBall, cutAngle: cutAngle,
     solveBank: solveBank, solveKick: solveKick, solveAll: solveAll, score: score, difficulty: difficulty,
     speedBudget: speedBudget, checkSpeed: checkSpeed, speedName: speedName, maxSpeedForCut: maxSpeedForCut,
-    headMath: headMath, fromCorner: fromCorner, OPPOSITE: OPPOSITE,
+    headMath: headMath, fromCorner: fromCorner, cornerPocket: cornerPocket, calibrate: calibrate, tableAim: tableAim, OPPOSITE: OPPOSITE,
     describeCoord: describeCoord, fmt: fmt, dist: dist, unit: unit, sub: sub, add: add, mul: mul
   };
 });

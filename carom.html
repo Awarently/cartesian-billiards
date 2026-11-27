@@ -26,6 +26,7 @@
     </div>
     <div class="bar-right">
       <span class="badge" id="model-badge">Ideal geometry</span>
+      <button type="button" class="guide-link" id="game-toggle" aria-pressed="false">Game</button>
       <a class="guide-link" href="index.html">Pool</a>
       <a class="guide-link" href="guide.html#carom">Guide</a>
     </div>
@@ -41,6 +42,16 @@
 
   <section class="panel" id="panel" aria-label="Shot solution">
     <div class="quick">
+      <div class="game" id="game" hidden>
+        <div class="game-score" id="game-score" aria-live="polite"></div>
+        <div class="game-btns">
+          <button type="button" class="game-made" id="game-made">Made it</button>
+          <button type="button" class="game-miss" id="game-miss">Missed</button>
+          <button type="button" id="game-undo">Undo</button>
+          <button type="button" id="game-new">New</button>
+        </div>
+        <p class="game-hint" id="game-hint"></p>
+      </div>
       <div class="controls">
         <div class="seg" role="group" aria-label="Cue ball">
           <button type="button" id="cue-white" aria-pressed="true">White</button>
