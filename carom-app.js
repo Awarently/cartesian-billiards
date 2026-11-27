@@ -16,8 +16,12 @@
       cue: 'white', cushions: 3, family: 'all', model: 'roll', route: null, routeN: 0,
       balls: { white: { x: 1.5, y: 1.2 }, yellow: { x: 3.2, y: 3.0 }, red: { x: 5.6, y: 2.2 } },
       table: '10', pointMode: false, orient: 'auto',
-      show: { grid: false, numbers: true, ghost: true, path: true, object: true }
+      show: { grid: false, numbers: true, ghost: true, path: true, object: true },
+      game: null
     };
+  }
+  function newGame() {
+    return { on: true, score: { white: 0, yellow: 0 }, innings: { white: 1, yellow: 0 }, run: 0, high: { white: 0, yellow: 0 }, log: [], hint: 'Break: white shoots first. Tap Made it or Missed after each shot.' };
   }
   var state = defaults(), cfg = CC.caromConfig(state.table);
   var view = null, vbW = 0, vbH = 0, sols = [], counts = { 3: 0, 4: 0 }, bestScore = { 3: null, 4: null }, current = null;
@@ -48,6 +52,17 @@
       d.pointMode = !!s.pointMode;
       d.orient = ['auto', 'h', 'v'].indexOf(s.orient) >= 0 ? s.orient : 'auto';
       if (s.show) Object.keys(d.show).forEach(function (k) { if (k in s.show) d.show[k] = !!s.show[k]; });
+      var g = s.game;
+      if (g && typeof g === 'object' && g.score && g.innings && g.high && Array.isArray(g.log)) {
+        var num = function (v) { return isFinite(v) && v >= 0 ? Math.floor(v) : 0; };
+        d.game = {
+          on: !!g.on, run: num(g.run), hint: typeof g.hint === 'string' ? g.hint.slice(0, 200) : '',
+          score: { white: num(g.score.white), yellow: num(g.score.yellow) },
+          innings: { white: num(g.innings.white), yellow: num(g.innings.yellow) },
+          high: { white: num(g.high.white), yellow: num(g.high.yellow) },
+          log: g.log.slice(-500).filter(function (e) { return e && e.balls && (e.cue === 'white' || e.cue === 'yellow'); })
+        };
+      }
       if (s.balls) ['white', 'yellow', 'red'].forEach(function (k) {
         var b = s.balls[k];
         if (b && isFinite(b.x) && isFinite(b.y)) d.balls[k] = { x: +b.x, y: +b.y };
@@ -332,11 +347,72 @@
     $('model-badge').textContent = 'Ideal geometry · ' + (state.model === 'roll' ? 'roll' : 'stun');
   }
 
+  /* ---------- game mode ---------- */
+
+  function gameOn() { return !!(state.game && state.game.on); }
+  function copyBalls() { var o = {}; Object.keys(state.balls).forEach(function (k) { o[k] = { x: state.balls[k].x, y: state.balls[k].y }; }); return o; }
+  function avg(p) { var g = state.game, n = g.innings[p]; return n ? (g.score[p] / n).toFixed(3) : '0.000'; }
+  function updateGame() {
+    var on = gameOn(), box = $('game');
+    box.hidden = !on;
+    $('game-toggle').setAttribute('aria-pressed', on);
+    $('cue-white').disabled = on; $('cue-yellow').disabled = on;
+    if (!on) return;
+    var g = state.game, t = state.cue;
+    function line(p) {
+      return '<span class="' + (p === t ? 'turn' : '') + '" title="innings ' + g.innings[p] + ', high run ' + g.high[p] + '">' +
+        (p === t ? '\u25b6 ' : '') + NAMES[p] + ' <b>' + g.score[p] + '</b> \u00b7 avg ' + avg(p) + ' \u00b7 high ' + g.high[p] + '</span>';
+    }
+    $('game-score').innerHTML = line('white') + line('yellow');
+    $('game-hint').textContent = g.hint || '';
+    $('game-undo').disabled = !g.log.length;
+  }
+  function gameShot(made) {
+    var g = state.game, p = state.cue;
+    g.log.push({ cue: p, made: made, balls: copyBalls(), run: g.run, high: g.high[p] });
+    if (made) {
+      g.score[p]++; g.run++; g.high[p] = Math.max(g.high[p], g.run);
+      g.hint = 'Point (run ' + g.run + '). ' + NAMES[p] + ' again: drag the balls to where they stopped.';
+    } else {
+      var o = p === 'white' ? 'yellow' : 'white';
+      g.run = 0; g.innings[o]++; state.cue = o;
+      g.hint = 'Miss. ' + NAMES[o] + ' to shoot: drag the balls to where they stopped.';
+    }
+    state.route = null; state.routeN = 0;
+    commit();
+  }
+  $('game-made').addEventListener('click', function () { gameShot(true); });
+  $('game-miss').addEventListener('click', function () { gameShot(false); });
+  $('game-undo').addEventListener('click', function () {
+    var g = state.game, e = g.log.pop();
+    if (!e) return;
+    if (e.made) g.score[e.cue]--;
+    else { var o = e.cue === 'white' ? 'yellow' : 'white'; g.innings[o]--; }
+    g.run = e.run; g.high[e.cue] = e.high; state.cue = e.cue; state.balls = e.balls;
+    g.hint = 'Last shot undone. ' + NAMES[e.cue] + ' to shoot.';
+    commit();
+  });
+  function startGame() {
+    state.game = newGame(); state.cue = 'white'; state.route = null; state.routeN = 0;
+    var L = CC.breakLayout(cfg);
+    state.balls = { white: L.cue, yellow: L.yellow, red: L.red };
+    commit();
+  }
+  $('game-new').addEventListener('click', function () {
+    if (state.game && state.game.log.length && !window.confirm('Start a new game? The current score is cleared.')) return;
+    startGame();
+  });
+  $('game-toggle').addEventListener('click', function () {
+    if (gameOn()) { state.game.on = false; commit(); return; }
+    if (state.game && state.game.log.length) { state.game.on = true; commit(); return; }
+    startGame();
+  });
+
   function render(all) {
     compute(all);
     var o = chooseOrient();
     if (!view || view.orient !== o) drawStatic();
-    drawDynamic(); updatePanel();
+    drawDynamic(); updatePanel(); updateGame();
   }
   function renderLive() {
     if (frame) return;
