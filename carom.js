@@ -18,6 +18,7 @@
  *
  * Cushions use the mirror method (equal angles). The cue ball's new
  * direction after it hits ball A needs a hit model:
+ *   auto   try both for every route (each route keeps its own hit)
  *   stun   no spin at impact. The cue ball leaves along the tangent line,
  *          90 degrees from the line of centres.
  *   roll   natural roll at impact. Final direction from the 2/5 rule
@@ -297,6 +298,8 @@
     sol.hitSide = cross(dIn, mul(n, -1)) > 0 ? 'left' : 'right';
     sol.thickness = 1 - Math.sin(df.alpha);
     sol.travel = CB.pathLength(sol.cuePath);
+    /* can the cue ball go straight at either object ball? */
+    sol.lineOfSight = !CB.firstBlocker(cue, A, [B], r, []) || !CB.firstBlocker(cue, B, [A], r, []);
     sol.toFirst = CB.pathLength(pts1);
 
     /* object ball A leaves along the line of centres, at cos(cut) of the impact speed */
@@ -422,13 +425,19 @@
    *   cut cost, aim sensitivity x 4, speed above 3 m/s x 1.5
    *   +5 per kiss warning, +1.5 per other warning
    */
-  function preBall(k) { return k <= 1 ? 1.5 * k : 1.5 + 4 * (k - 1); }
+  /*
+   * Cushions before the first ball. When the cue ball can go straight at
+   * either object ball, a player goes line of sight, so each cushion
+   * first costs 10. When both direct lines are blocked, going off a
+   * cushion is normal: 2 per cushion.
+   */
+  function preBall(s) { return (s.lineOfSight ? 10 : 2) * s.seq1.length; }
   function score(s) {
     var cut = s.alpha, cutCost = cut <= 50 ? 0 : (cut - 50) / 8;
     if (s.model === 'stun' && cut < 25) cutCost += (25 - cut) / 6;
     var kiss = s.kiss ? 1 : 0;
-    return s.travel + (s.railSequence.length - 3) + preBall(s.seq1.length) + cutCost +
-      4 * Math.min(s.sensitivity, 3) + 1.5 * Math.max(0, s.speedNeeded - 3) +
+    return s.travel + (s.railSequence.length - 3) + preBall(s) + cutCost +
+      3 * Math.min(s.sensitivity, 3) + 1.5 * Math.max(0, s.speedNeeded - 3) +
       5 * kiss + 1.5 * (s.warnings.length - kiss);
   }
   function difficulty(v) { return v < 15 ? 'Easy' : v < 20 ? 'Moderate' : v < 26 ? 'Difficult' : 'Advanced'; }
@@ -441,19 +450,25 @@
   function solveCarom(req, cushions, opts) {
     opts = opts || {};
     var n = cushions || 3, out = [];
-    for (var a = 0; a < 2; a++) {
-      for (var j = 0; j <= n; j++) {
-        var fam = j === 0 ? 'ball-first' : j === n ? 'rail-first' : 'mixed';
-        if (opts.family && opts.family !== 'all' && opts.family !== fam) continue;
-        var s1 = CB.enumerateSequences(j), s2 = CB.enumerateSequences(n - j);
-        for (var x = 0; x < s1.length; x++) for (var y = 0; y < s2.length; y++) solveSplit(req, a, s1[x], s2[y], out);
+    /* model 'auto': try a rolling and a stun hit for every route; each route keeps its own model */
+    var models = req.model === 'auto' ? ['roll', 'stun'] : [req.model];
+    models.forEach(function (m) {
+      var rq = {}; Object.keys(req).forEach(function (k) { rq[k] = req[k]; }); rq.model = m;
+      for (var a = 0; a < 2; a++) {
+        for (var j = 0; j <= n; j++) {
+          var fam = j === 0 ? 'ball-first' : j === n ? 'rail-first' : 'mixed';
+          var f = opts.family;
+          if (f && f !== 'all' && f !== fam && !(f === 'cushion-first' && j > 0)) continue;
+          var s1 = CB.enumerateSequences(j), s2 = CB.enumerateSequences(n - j);
+          for (var x = 0; x < s1.length; x++) for (var y = 0; y < s2.length; y++) solveSplit(rq, a, s1[x], s2[y], out);
+        }
       }
-    }
+    });
     /* drop near-duplicates (same route, same aim) */
     var uniq = [];
     out.forEach(function (s) {
       var dup = uniq.some(function (u) {
-        return u.firstBall === s.firstBall && u.railSequence.join('') === s.railSequence.join('') &&
+        return u.model === s.model && u.firstBall === s.firstBall && u.railSequence.join('') === s.railSequence.join('') &&
           u.seq1.length === s.seq1.length && dot(u.aimDir, s.aimDir) > Math.cos(0.05 * DEG);
       });
       if (!dup) uniq.push(s);

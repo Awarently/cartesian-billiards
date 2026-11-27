@@ -13,7 +13,7 @@
 
   function defaults() {
     return {
-      cue: 'white', cushions: 3, family: 'all', model: 'roll', route: null, routeN: 0,
+      cue: 'white', cushions: 3, family: 'all', model: 'auto', route: null, routeN: 0,
       balls: { white: { x: 1.5, y: 1.2 }, yellow: { x: 3.2, y: 3.0 }, red: { x: 5.6, y: 2.2 } },
       table: '10', pointMode: false, orient: 'auto',
       show: { grid: false, numbers: true, ghost: true, path: true, object: true },
@@ -44,8 +44,8 @@
     try {
       d.cue = s.cue === 'yellow' ? 'yellow' : 'white';
       d.cushions = s.cushions === 4 ? 4 : 3;
-      d.family = ['all', 'ball-first', 'rail-first', 'mixed'].indexOf(s.family) >= 0 ? s.family : 'all';
-      d.model = s.model === 'stun' ? 'stun' : 'roll';
+      d.family = ['all', 'ball-first', 'cushion-first'].indexOf(s.family) >= 0 ? s.family : 'all';
+      d.model = s.model === 'stun' || s.model === 'roll' ? s.model : 'auto';
       d.route = typeof s.route === 'string' ? s.route : null;
       d.routeN = Number.isInteger(s.routeN) && s.routeN >= 0 && s.routeN < 8 ? s.routeN : 0;
       d.table = CC.TABLES[s.table] ? s.table : '10';
@@ -88,7 +88,7 @@
 
   /* ---------- solving ---------- */
 
-  function routeKey(s) { return s.firstName + ':' + s.seq1.join('') + '|' + s.seq2.join(''); }
+  function routeKey(s) { return s.model + ':' + s.firstName + ':' + s.seq1.join('') + '|' + s.seq2.join(''); }
   function request() {
     var o = objIds();
     return {
@@ -224,12 +224,14 @@
   function f1(v) { return CB.fmt(v, 1); }
   function f2(v) { return CB.fmt(v, 2); }
   function pt(p) { return '(' + f2(p.x) + ', ' + f2(p.y) + ')'; }
-  var FAMILY = { 'ball-first': 'Ball first', 'rail-first': 'Rail first', 'mixed': 'Mixed' };
+  var FAMILY = { 'all': 'All', 'ball-first': 'Ball first', 'cushion-first': 'Cushion first', 'rail-first': 'Rail first', 'mixed': 'Mixed' };
   /* "Ball first", "1 cushion first", "Rail first" ... */
   function famText(s) {
     if (s.family !== 'mixed') return FAMILY[s.family];
     return s.seq1.length + (s.seq1.length === 1 ? ' cushion' : ' cushions') + ' first';
   }
+  var MODEL = { auto: 'roll or stun per route', roll: 'rolling hit', stun: 'stun hit' };
+  function hitName(s) { return s.model === 'roll' ? 'rolling hit (follow)' : 'stun hit (no follow)'; }
   function hitText(s) { return CC.thicknessText(s.thickness) + (s.thickness > 0.97 ? '' : ' on the ' + s.hitSide); }
 
   /* Events in order: cushions, first ball, cushions, second ball. */
@@ -249,6 +251,7 @@
     var sol = current, valid = sols.filter(function (s) { return s.valid; });
     $('cue-white').setAttribute('aria-pressed', state.cue === 'white');
     $('cue-yellow').setAttribute('aria-pressed', state.cue === 'yellow');
+    $('hit-auto').setAttribute('aria-pressed', state.model === 'auto');
     $('hit-roll').setAttribute('aria-pressed', state.model === 'roll');
     $('hit-stun').setAttribute('aria-pressed', state.model === 'stun');
     document.querySelectorAll('[data-family]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-family') === state.family); });
@@ -262,7 +265,7 @@
     valid.slice(0, MAX_CHIPS).forEach(function (s, k) {
       var key = routeKey(s), ord = seen[key] = (seen[key] === undefined ? 0 : seen[key] + 1);
       rh.push('<button type="button" class="route-chip' + (k === 0 ? ' best' : '') + '" data-route="' + esc(key) + '" data-n="' + ord + '" aria-pressed="' + (!!state.route && current === s) + '">' +
-        esc(chipLabel(s)) + '<span class="lvl">' + s.difficulty + '</span></button>');
+        esc(chipLabel(s)) + (state.model === 'auto' ? ' \u00b7 ' + s.model : '') + '<span class="lvl">' + s.difficulty + '</span></button>');
     });
     if (valid.length > MAX_CHIPS) rh.push('<span class="routes-empty">+' + (valid.length - MAX_CHIPS) + ' harder</span>');
     if (!valid.length) rh.push('<span class="routes-empty">No ' + state.cushions + '-cushion route' + (state.family !== 'all' ? ' of this kind' : '') + '. Move a ball or change the settings.</span>');
@@ -276,7 +279,7 @@
       status.className = 'status ' + (sol.warnings.length ? 'warn' : 'ok');
       status.textContent = sol.warnings.length ? 'Caution' : sol.difficulty;
       sub.className = 'sub';
-      sub.textContent = famText(sol) + ' · ' + hitText(sol) + ' · ' + sol.speedCategory.toLowerCase() + ' speed · aim ±' + f2(sol.tolerance) + '°';
+      sub.textContent = (state.family !== 'all' ? 'Filter: ' + FAMILY[state.family] + ' · ' : '') + famText(sol) + ' · ' + (sol.model === 'roll' ? 'roll' : 'stun') + ' · ' + hitText(sol) + ' · ' + sol.speedCategory.toLowerCase() + ' speed · aim ±' + f2(sol.tolerance) + '°';
       if (sol.warnings.length) sub.textContent = sol.warnings[0];
       var other = state.cushions === 3 ? 4 : 3;
       if (bestScore[other] !== null && bestScore[other] + 2 < sol.difficultyScore) {
@@ -285,7 +288,7 @@
       var ev = events(sol), parts = [], cue = NAMES[state.cue].toLowerCase(), i;
       var firstRails = ev.slice(0, sol.seq1.length).map(function (e) { return '<b>' + e.c.label + '</b>'; });
       var lateRails = ev.slice(sol.seq1.length + 1, -1).map(function (e) { return '<b>' + e.c.label + '</b>'; });
-      var hit = 'Hit the ' + sol.firstName.toLowerCase() + ' <b>' + esc(hitText(sol)) + '</b> (cut ' + Math.round(sol.alpha) + '°).';
+      var hit = 'Hit the ' + sol.firstName.toLowerCase() + ' <b>' + esc(hitText(sol)) + '</b> with a ' + hitName(sol) + ' (cut ' + Math.round(sol.alpha) + '°).';
       if (sol.family === 'ball-first') {
         parts.push(hit, 'The ' + cue + ' then goes ' + lateRails.join(', then ') + ' and meets the ' + sol.secondName.toLowerCase() + '.');
       } else {
@@ -315,7 +318,7 @@
       });
       row('Ghost ball', pt(sol.ghost));
       row('Cut angle', Math.round(sol.alpha) + '°');
-      row('Cue ball turns', Math.round(sol.deflection) + '° off its line (' + (state.model === 'roll' ? 'natural roll' : 'stun') + ')');
+      row('Cue ball turns', Math.round(sol.deflection) + '° off its line (' + (sol.model === 'roll' ? 'rolling hit' : 'stun hit') + ')');
       row('Speed kept', Math.round(sol.exitSpeed * 100) + '% of the speed at the hit', 'plain');
       row('Aim tolerance', '±' + f2(sol.tolerance) + '° still reaches the ' + sol.secondName.toLowerCase() + ' (ideal line)', 'plain');
       row('Speed needed', sol.speedCategory + ', about ' + f1(sol.speedNeeded) + ' m/s off the tip (estimate; every cushion and the first-ball hit cost speed)', sol.speedNeeded > CC.SPEED.max ? 'warn' : 'plain');
@@ -324,7 +327,7 @@
       sol.warnings.forEach(function (w) { row('Caution', esc(w), 'warn'); });
     }
     row('Routes found', '3 cushions: ' + counts[3] + ' · 4 cushions: ' + counts[4], 'plain');
-    row('Model', 'Ideal geometry, ' + (state.model === 'roll' ? 'natural roll' : 'stun') + ' hit, ' + (state.pointMode ? 'point ball' : cfg.ballDiameterMm + ' mm ball on ' + cfg.name + ' table'), 'plain');
+    row('Model', 'Ideal geometry, ' + MODEL[state.model] + ', ' + (state.pointMode ? 'point ball' : cfg.ballDiameterMm + ' mm ball on ' + cfg.name + ' table'), 'plain');
     $('facts').innerHTML = f.join('');
 
     var ph = '';
@@ -344,7 +347,7 @@
     $('opt-object').checked = state.show.object; $('opt-ball').checked = !state.pointMode;
     $('opt-table').value = state.table;
     $('act-undo').disabled = !undoStack.length; $('act-redo').disabled = !redoStack.length;
-    $('model-badge').textContent = 'Ideal geometry · ' + (state.model === 'roll' ? 'roll' : 'stun');
+    $('model-badge').textContent = 'Ideal geometry · ' + state.model;
   }
 
   /* ---------- game mode ---------- */
@@ -465,6 +468,7 @@
   function set(k, v) { return function () { state[k] = v; state.route = null; state.routeN = 0; commit(); }; }
   $('cue-white').addEventListener('click', set('cue', 'white'));
   $('cue-yellow').addEventListener('click', set('cue', 'yellow'));
+  $('hit-auto').addEventListener('click', set('model', 'auto'));
   $('hit-roll').addEventListener('click', set('model', 'roll'));
   $('hit-stun').addEventListener('click', set('model', 'stun'));
   $('cush-3').addEventListener('click', set('cushions', 3));
