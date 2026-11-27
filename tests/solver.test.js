@@ -218,6 +218,37 @@ test('around the corner works mirrored (T, L, B) and on short rails (L, T, R)', 
   const b = CB.solveKick({ cue: cue(1, 1.2), object: obj(1.5, 2.6), rails: ['L', 'T', 'R'], cfg, pointMode: true });
   if (b.valid) { const m = CB.headMath(b); assert.strictEqual(m.rule, 'corner'); near(m.predicted, m.actual, 1e-9); }
 });
+test('count and halve (2 cushions at a corner): video layouts, point ball, balls equally off the rail', () => {
+  // Reel examples: cue on 2, target 5 or 4 away; cue on 3, target 5 away. Counted from the far (left) corner.
+  [[2, 7, 2.5, 3], [2, 6, 2, 2], [3, 8 - 0.3, 2.35, 1.7]].forEach(([c, tx, aFromR, vid]) => {
+    const s = CB.solveKick({ cue: cue(c, 0.5), object: obj(tx, 0.5), rails: ['T', 'R'], cfg, pointMode: true });
+    assert.ok(s.valid, s.errors.join('; '));
+    const m = CB.headMath(s);
+    assert.strictEqual(m.rule, 'count'); assert.strictEqual(m.corner, 'R');
+    near(m.a, aFromR, 1e-9); near(m.predicted, 8 - aFromR, 1e-9); near(m.predicted, m.actual, 1e-9);
+    near(m.video.a, vid, 1e-9);
+  });
+});
+test('count and halve works mirrored (T, L) and is off when the balls are not equally far from the rail', () => {
+  const a = CB.headMath(CB.solveKick({ cue: cue(6, 0.5), object: obj(1, 0.5), rails: ['T', 'L'], cfg, pointMode: true }));
+  assert.strictEqual(a.rule, 'count'); near(a.predicted, 2.5, 1e-9); near(a.actual, 2.5, 1e-9);
+  const b = CB.headMath(CB.solveKick({ cue: cue(2, 0.5), object: obj(7, 1.5), rails: ['T', 'R'], cfg, pointMode: true }));
+  assert.strictEqual(b.rule, 'count'); assert.ok(Math.abs(b.predicted - b.actual) > 0.05);
+  const r1 = CB.headMath(CB.solveKick({ cue: cue(2, 0.5), object: obj(7, 0.5), rails: ['T', 'R'], cfg }));
+  assert.ok(Math.abs(r1.predicted - r1.actual) < 0.3, 'real ball within 0.3: ' + r1.predicted + ' vs ' + r1.actual);
+});
+test('table offset: a run-long table shifts the aim by half the landing error', () => {
+  const s = CB.solveKick({ cue: cue(2.25, 1), object: obj(3.75, 1), rails: ['T', 'R', 'B'], cfg, pointMode: true });
+  const m = CB.headMath(s);                       // aim T6, lands B5 (3 from R)
+  assert.strictEqual(m.pocket.id, 'TR'); near(m.gap, 4, 1e-9);
+  const k = CB.calibrate(m, 4);                   // ball really reached B4 = 4 from R
+  near(k, 1, 1e-9);
+  near(CB.tableAim(m, k), 5.5, 1e-9);            // aim half a diamond further from R
+  near(CB.tableAim(m, 0), 6, 1e-9);
+  const c = CB.headMath(CB.solveKick({ cue: cue(2, 0.5), object: obj(7, 0.5), rails: ['T', 'R'], cfg, pointMode: true }));
+  assert.strictEqual(c.pocket.id, 'TR');
+  near(CB.calibrate(c, 7), 0, 1e-9); near(CB.tableAim(c, CB.calibrate(c, 6.5)), 5.25, 1e-9);
+});
 test('equal steps: S=0.5, aim T2.5 gives B4.5 then T6.5', () => {
   const s = CB.solveKick({ cue: cue(1, 1), object: obj(7, 3), rails: ['T', 'B', 'T'], cfg, pointMode: true });
   assert.ok(s.valid, s.errors.join('; '));
