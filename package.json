@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bank and kick shot calculator using one Cartesian diamond system.",
   "scripts": {
-    "test": "node tests/solver.test.js",
+    "test": "node tests/solver.test.js && node tests/carom.test.js",
     "start": "python3 -m http.server 8080"
   }
 }

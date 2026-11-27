@@ -3,7 +3,7 @@
  * Change VERSION whenever any cached file changes, so phones pick up the update.
  * Strategy: serve from cache, update the cache in the background (stale-while-revalidate).
  */
-var VERSION = 'cb-v8';
+var VERSION = 'cb-v9';
 var FILES = [
   './',
   'index.html',
@@ -12,6 +12,9 @@ var FILES = [
   'fonts.css',
   'solver.js',
   'app.js',
+  'carom.html',
+  'carom.js',
+  'carom-app.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
