@@ -301,3 +301,15 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .system .calib { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .system .calib input { width: 5.5em; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: transparent; font-family: var(--font-mono); }
 .system .calib .opt-btn { padding: 6px 12px; min-height: 36px; }
+
+/* ---------- three-cushion page ---------- */
+body.carom { --cloth: #2764a3; --cloth-deep: #1c4c80; }
+.seg-small button { min-height: 38px; min-width: 0; padding: 0 10px; font-size: 15px; }
+.t-ord { fill: var(--pearl); font-size: 22px; }
+.route .ball-red { color: #ff7b6b; }
+.route .ball-yellow { color: var(--object); }
+.route .ball-white { color: #fff; }
+@media (max-width: 480px) {
+  body.carom .controls { flex-wrap: wrap; }
+  .seg-small button { padding: 0 8px; font-size: 14px; }
+}

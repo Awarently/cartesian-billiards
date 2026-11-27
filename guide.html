@@ -133,6 +133,7 @@ td:first-child { white-space: nowrap; }
     <li><a href="#tools"><span>8</span>Other controls</a></li>
     <li><a href="#limits"><span>9</span>What the numbers do not include</a></li>
     <li><a href="#install"><span>10</span>Install and use offline</a></li>
+    <li><a href="#carom"><span>11</span>Three-cushion</a></li>
   </ul>
 
   <!-- ============ 1 ============ -->
@@ -539,7 +540,33 @@ td:first-child { white-space: nowrap; }
   </ol>
   <p>On Android, open the same address in Chrome and tap <b>Install app</b>.</p>
 
-  <p style="margin-top:32px"><a class="back" href="./">Back to table</a></p>
+  <!-- ============ 11 ============ -->
+  <h2 id="carom"><span class="n">11</span>Three-cushion</h2>
+  <p>Tap <b>3-Cushion</b> at the top of the pool screen. The carom table uses the same numbers: 0 to 8 along the long rails, 0 to 4 along the short rails, origin at the bottom-left corner. There are no pockets.</p>
+  <p>A point: the cue ball touches both other balls and makes at least three cushion contacts before it touches the second ball. The same cushion can count more than once.</p>
+  <ol class="steps">
+    <li><b>Place the three balls.</b> Drag white, yellow and red anywhere. <i>Start position</i> sets up the opening shot (red on the foot spot, the other ball on the head spot, cue ball 15.25 cm to the side).</li>
+    <li><b>Select your cue ball:</b> White or Yellow. A dashed ring marks it.</li>
+    <li><b>Select the number of cushions:</b> 3 or 4. The badge shows how many routes the app found.</li>
+    <li><b>Filter the shot type</b> if you want: <i>Ball first</i> (hit the first ball, then the cushions), <i>Rail first</i> (all cushions, then the first ball), or <i>Mixed</i> (some cushions before the first ball, some after).</li>
+    <li><b>Select the hit:</b> <i>Roll</i> or <i>Stun</i>. This sets which way the cue ball goes after it hits the first ball (see below).</li>
+    <li><b>Read the route.</b> Cushion aim points show in order, for example <code>B0.56 → L0.88 → T2.62 → Yellow → Red</code>. The line under it shows the shot type, how thick to hit the first ball (in eighths of a ball, and which side), and the aim tolerance.</li>
+  </ol>
+  <h3>How the cue ball leaves the first ball</h3>
+  <ul>
+    <li><b>Roll</b> (natural roll at impact): the cue ball ends up about 30 to 34 degrees off its aim line for any hit from 1/4 to 3/4 ball. This is the 30-degree rule. The short curve before the ball settles on that line is not drawn.</li>
+    <li><b>Stun</b> (no spin at impact): the cue ball leaves along the tangent line, 90 degrees to the line between the ball centres. Very full stun hits are rejected because the cue ball almost stops.</li>
+  </ul>
+  <h3>Read the numbers</h3>
+  <ul>
+    <li><b>Aim tolerance</b>: how many degrees the first aim can be off and still reach the second ball on the ideal line. Bigger is easier.</li>
+    <li><b>Kiss</b>: the app follows the first ball along its line (constant speed, up to four cushions) and warns when it meets the cue ball again or reaches the second ball first.</li>
+    <li><b>Difficulty</b>: a heuristic from travel, extra cushions, cut angle, aim tolerance and warnings. It is not a make percentage.</li>
+    <li>The dashed yellow line is the first ball's path. Turn it off with <i>First-ball path</i>.</li>
+  </ul>
+  <p>Limits: ideal geometry. No side spin (running or reverse English), throw, cushion compression or speed. Real three-cushion play uses a lot of side spin, so real routes run longer or shorter than these lines. Use the numbers as a reference line, then adjust for your table.</p>
+
+  <p style="margin-top:32px"><a class="back" href="./">Back to table</a> · <a class="back" href="carom.html">Back to three-cushion</a></p>
 </main>
 </body>
 </html>
