@@ -185,6 +185,8 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   overflow-wrap: anywhere;
 }
 .rule-line b { color: var(--mark); font-weight: 600; }
+.rule-line .rl-formula { display: block; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em; color: var(--pearl); margin-bottom: 2px; }
+.system .formula { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--pearl); padding: 6px 8px; border-left: 3px solid var(--mark); background: rgba(255,255,255,0.04); }
 .system { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--room); border: 1px solid var(--line); }
 .system:empty { display: none; }
 .system h3 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pearl); }
