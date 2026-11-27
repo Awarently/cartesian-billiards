@@ -67,11 +67,11 @@
         <div class="seg seg-small" role="group" aria-label="Shot family">
           <button type="button" data-family="all" aria-pressed="true">All</button>
           <button type="button" data-family="ball-first" aria-pressed="false">Ball first</button>
-          <button type="button" data-family="rail-first" aria-pressed="false">Rail first</button>
-          <button type="button" data-family="mixed" aria-pressed="false">Mixed</button>
+          <button type="button" data-family="cushion-first" aria-pressed="false">Cushion first</button>
         </div>
         <div class="seg seg-small" role="group" aria-label="Hit">
-          <button type="button" id="hit-roll" aria-pressed="true">Roll</button>
+          <button type="button" id="hit-auto" aria-pressed="true">Auto</button>
+          <button type="button" id="hit-roll" aria-pressed="false">Roll</button>
           <button type="button" id="hit-stun" aria-pressed="false">Stun</button>
         </div>
       </div>
@@ -123,7 +123,7 @@
 
       <p class="note">
         Ideal geometry. Cushions reflect at equal angles. After the first ball the cue ball follows the hit model:
-        Roll uses the natural-roll rule (about 34 degrees off the aim line at a half-ball hit, the "30-degree rule");
+        Auto tries both hits for every route and shows which one each route uses. Roll uses the natural-roll rule (about 34 degrees off the aim line at a half-ball hit, the "30-degree rule");
         Stun uses the tangent line (90 degrees to the line of centres). No side spin, throw, cushion compression or speed.
         Real tables play shorter or longer. Use the numbers as a starting reference.
       </p>

@@ -552,8 +552,8 @@ td:first-child { white-space: nowrap; }
     <li><b>Place the three balls.</b> Drag white, yellow and red anywhere. <i>Start position</i> sets up the opening shot (red on the foot spot, the other ball on the head spot, cue ball 15.25 cm to the side).</li>
     <li><b>Select your cue ball:</b> White or Yellow. A dashed ring marks it.</li>
     <li><b>Select the number of cushions:</b> 3 or 4. The badge shows how many routes the app found.</li>
-    <li><b>Filter the shot type</b> if you want: <i>Ball first</i> (hit the first ball, then the cushions), <i>Rail first</i> (all cushions, then the first ball), or <i>Mixed</i> (some cushions before the first ball, some after).</li>
-    <li><b>Select the hit:</b> <i>Roll</i> or <i>Stun</i>. This sets which way the cue ball goes after it hits the first ball (see below).</li>
+    <li><b>Filter the shot type</b> if you want: <i>Ball first</i> (straight at the first ball, then the cushions) or <i>Cushion first</i> (one or more cushions before the first ball). Keep <i>All</i> for normal play. When a filter is on, the line under the route starts with <i>Filter:</i>.</li>
+    <li><b>Select the hit:</b> <i>Auto</i> (default) tries a rolling hit and a stun hit for every route and shows which one each route uses. <i>Roll</i> or <i>Stun</i> limits the list to that hit (see below).</li>
     <li><b>Read the route.</b> Cushion aim points show in order, for example <code>B0.56 → L0.88 → T2.62 → Yellow → Red</code>. The line under it shows the shot type, how thick to hit the first ball (in eighths of a ball, and which side), and the aim tolerance.</li>
   </ol>
   <h3>Game mode: follow a real game</h3>
@@ -574,7 +574,7 @@ td:first-child { white-space: nowrap; }
     <li><b>Aim tolerance</b>: how many degrees the first aim can be off and still reach the second ball on the ideal line. Bigger is easier.</li>
     <li><b>Kiss</b>: the app follows the first ball along its line (constant speed, up to four cushions) and warns when it meets the cue ball again or reaches the second ball first.</li>
     <li><b>Speed</b>: Soft, Medium, Firm or Hard, worked back from the second ball. Every cushion and the hit on the first ball cost speed. Routes that need more than about 7.5 m/s are not listed. It is an estimate for comparing routes.</li>
-    <li><b>Difficulty</b>: a heuristic from travel, extra cushions, cushions before the first ball, cut angle, aim tolerance, speed and warnings. It is not a make percentage. Going to the first ball direct or off one cushion costs little; each extra cushion before the first ball costs a lot, because a player would not spend speed there.</li>
+    <li><b>Difficulty</b>: a heuristic from travel, extra cushions, cushions before the first ball, cut angle, aim tolerance, speed and warnings. It is not a make percentage. When the cue ball can go straight at either ball, every cushion before the first ball costs a lot: a player goes line of sight first. Only when both direct lines are blocked is a cushion first normal.</li>
     <li>When the other cushion count has a clearly easier route, the line under the route says so.</li>
     <li>The dashed yellow line is the first ball's path. Turn it off with <i>First-ball path</i>.</li>
   </ul>

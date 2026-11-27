@@ -160,6 +160,31 @@ test('speed estimate: more cushions and the first-ball hit need more speed', () 
   assert.strictEqual(CC.speedCategory(1.5), 'Soft');
   assert.strictEqual(CC.speedCategory(9), 'Not playable');
 });
+test('line of sight first: with a ball in sight, the best route goes straight at a ball (Gary 2026-11-27)', () => {
+  const rq = { cue: { x: 0.46, y: 2.56 }, cfg, model: 'auto',
+    balls: [{ id: 'white', name: 'White', x: 4.70, y: 2.24 }, { id: 'red', name: 'Red', x: 5.63, y: 2.21 }] };
+  [3, 4].forEach(n => {
+    const best = CC.solveCarom(rq, n).filter(s => s.valid)[0];
+    assert.strictEqual(best.family, 'ball-first', n + ' cushions: ' + best.family);
+    assert.strictEqual(best.firstName, 'White');
+  });
+  let ballFirst = 0, total = 0;
+  for (let k = 0; k < 30; k++) {
+    const sols = CC.solveCarom(req(layout(), 'auto'), 3).filter(s => s.valid);
+    if (!sols.length) continue;
+    total++;
+    if (sols[0].seq1.length === 0 || !sols[0].lineOfSight) ballFirst++;
+  }
+  assert.strictEqual(ballFirst, total);
+});
+test('auto hit tries roll and stun; each route keeps its own hit', () => {
+  const rq = req([{ x: 1.3, y: 0.9 }, { x: 5.2, y: 2.6 }, { x: 3.1, y: 3.2 }], 'auto');
+  const sols = CC.solveCarom(rq, 3).filter(s => s.valid);
+  const models = new Set(sols.map(s => s.model));
+  assert.ok(models.has('roll') && models.has('stun'));
+  sols.forEach(s => checkRoute(Object.assign({}, rq, { model: s.model }), s));
+  assert.ok(CC.solveCarom(rq, 3, { family: 'cushion-first' }).every(s => s.seq1.length > 0));
+});
 test('hit thickness in eighths', () => {
   assert.strictEqual(CC.thicknessText(0.5), '1/2 ball');
   assert.strictEqual(CC.thicknessText(0.76), '3/4 ball');
