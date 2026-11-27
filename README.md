@@ -66,7 +66,8 @@ These are exact for a point ball (unit tests). With ball size the solver can dif
 
 ## Assumptions and limits
 
-- Ideal geometry: equal angle in and out. No speed, spin, throw, or cushion compression. A real table plays different from these numbers. Use them as a reference, then adjust.
+- Ideal geometry: equal angle in and out. No spin, throw, or cushion compression.
+- Speed budget: each route gets an estimated cue speed (soft / medium / firm / hard), worked backward from the pocket through cloth, cushion and cut losses. Routes that need more than a hard stroke (7.5 m/s), or are too fast for their cut angle, are rejected as not playable. Constants are textbook estimates in `tableConfig().speed`, not measured. A real table plays different from these numbers. Use them as a reference, then adjust.
 - Diamonds are treated as on the cushion nose line. Real diamonds sit on the rail top, behind the nose.
 - Table sizes use playing-surface dimensions: 7 ft 78 x 39 in, 8 ft 88 x 44 in, 9 ft 100 x 50 in. Ball 2.25 in.
 - Pocket jaw and mouth sizes are approximations (corner jaw 3.4 in, side half-mouth 2.7 in). They set which routes are rejected near pockets. Change them in `tableConfig()` in `solver.js`.

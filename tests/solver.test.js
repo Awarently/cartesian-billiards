@@ -187,7 +187,9 @@ test('valid routes are sorted easiest first', () => {
     const list = CB.solveAll('bank', req, n).filter(s => s.valid).map(s => s.difficultyScore);
     for (let i = 1; i < list.length; i++) assert.ok(list[i] >= list[i - 1]);
   }
-  assert.ok(v.length >= 2);
+  assert.ok(v.length >= 1);
+  const tb = CB.solveAll('bank', req, 2).find(s => s.railSequence.join('') === 'TB');
+  assert.ok(!tb.valid && /Not playable/.test(tb.errors.join(' ')), 'TB (82 degree cut) must be rejected by the speed budget');
 });
 test('difficulty classes follow the score thresholds', () => {
   assert.strictEqual(CB.difficulty(5), 'Easy');
@@ -300,6 +302,40 @@ test('auto routing returns valid routes first', () => {
   assert.strictEqual(sols.length, 4);
   assert.strictEqual(sols[0].valid, true);
   assert.deepStrictEqual(sols[0].railSequence, ['T']);
+});
+
+console.log('Speed budget');
+test('Gary 9:43 layout: 3-cushion R2.39 > T6.46 > B3.23 at 81 degrees is not playable', () => {
+  const req = { cue: cue(5.40, 1.45), object: obj(6.71, 0.86, 2), others: [obj(2.85, 3.27, 1), obj(0.9, 2.2, 3)], pocket: P('TL'), cfg };
+  const s = CB.solveAll('bank', req, 3).find(x => x.railSequence.join('') === 'RTB');
+  assert.deepStrictEqual(s.cushionContacts.map(c => c.label), ['R2.39', 'T6.46', 'B3.23']);
+  assert.ok(!s.valid);
+  assert.ok(s.speed.cueSpeed > 7.5, 'needs ' + s.speed.cueSpeed);
+  assert.ok(/Not playable/.test(s.errors.join(' ')));
+});
+test('reference bank (2,1) off T to bottom-right is soft and playable', () => {
+  const s = CB.solveAll('bank', { cue: cue(1, 0.5), object: obj(2, 1), pocket: P('BR'), cfg }, 1).find(x => x.valid);
+  assert.ok(s && s.speed.playable);
+  assert.strictEqual(s.speed.category, 'Soft');
+});
+test('thinner cut needs more speed for the same object-ball path', () => {
+  const sols = [[1, 0.5], [2, 0.6], [6, 1], [7, 1.6], [6.5, 3]].map(([x, y]) => CB.solveBank({ cue: cue(x, y), object: obj(4, 2), pocket: P('BL'), rails: ['T'], cfg }))
+    .filter(s => s.valid).sort((p, q) => p.cutAngle.deg - q.cutAngle.deg);
+  assert.ok(sols.length >= 2);
+  const v = sols.map(s => CB.speedBudget(s, cfg).cueAtHit);
+  for (let i = 1; i < v.length; i++) assert.ok(v[i] >= v[i - 1] - 1e-9, 'cut ' + sols[i].cutAngle.deg);
+});
+test('allowed speed falls as the cut gets thinner', () => {
+  assert.strictEqual(CB.maxSpeedForCut(30), 7.5);
+  assert.ok(CB.maxSpeedForCut(60) > CB.maxSpeedForCut(80));
+  near(CB.maxSpeedForCut(80), 3, 1e-9);
+});
+test('speed categories', () => {
+  assert.strictEqual(CB.speedName(1.5), 'Soft');
+  assert.strictEqual(CB.speedName(3), 'Medium');
+  assert.strictEqual(CB.speedName(5), 'Firm');
+  assert.strictEqual(CB.speedName(7), 'Hard');
+  assert.strictEqual(CB.speedName(9), 'Not playable');
 });
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
